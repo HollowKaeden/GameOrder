@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
     'admin_panel.apps.AdminPanelConfig',
     'order_page.apps.OrderPageConfig',
     'registration.apps.RegistrationConfig',
