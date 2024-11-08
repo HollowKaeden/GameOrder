@@ -1,3 +1,6 @@
 from django.shortcuts import render
 
-# Create your views here.
+
+def tables(request):
+    template = 'admin_panel/admin.html'
+    return render(request, template)
