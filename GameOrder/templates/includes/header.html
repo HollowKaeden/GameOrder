@@ -1,0 +1,40 @@
+{% load static %}
+{% with request.resolver_match.view_name as view_name %}
+<header>
+  <nav class="navbar navbar-light" style="background-color: lightskyblue">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'registration:login' %}">
+        <img src="{% static 'img/logo.png' %}" width="30" height="30"
+          class="d-inline-block align-top" alt="">
+        GameOrder
+      </a>
+      <ul class="nav nav-pills">
+        <li class="nav-item">
+          <a class="nav-link {% if view_name == 'admin_panel:tables' %}
+            active{% endif %}" href="{% url 'admin_panel:tables' %}">
+            Админ-панель
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if view_name == 'order_page:order' %}
+            active{% endif %}" href="{% url 'order_page:order' %}">
+            Заказать проект
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if view_name == 'registration:login' %}
+            active{% endif %}" href="{% url 'registration:login' %}">
+            Авторизация
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if view_name == 'registration:logout' %}
+            active{% endif %}" href="{% url 'registration:logout' %}">
+            Выйти
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</header>
+{% endwith %}
