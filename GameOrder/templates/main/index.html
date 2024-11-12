@@ -4,5 +4,43 @@
   Главная
 {% endblock %}
 {% block content %}
-  <h1>Главная</h1>
+  <section class="bg-primary text-white text-center py-5">
+    <div class="container">
+      <h1 class="display-4">Добро пожаловать в Game Order!</h1>
+      <p class="lead">У нас вы можете заказать популярные игры быстро и удобно!</p>
+      <a href="{% url 'order_page:order' %}" class="btn btn-light btn-lg mt-3">Заказать игру</a>
+    </div>
+  </section>
+
+  <section id="features" class="py-5">
+    <div class="container">
+      <h2 class="text-center mb-4">Почему выбирают нас?</h2>
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card border-0">
+            <div class="card-body">
+              <h5 class="card-title">Быстрая доставка</h5>
+              <p class="card-text">Мы гарантируем доставку вашего заказа в кратчайшие сроки.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0">
+            <div class="card-body">
+              <h5 class="card-title">Оригинальные игры</h5>
+              <p class="card-text">Только лицензионные игры от лучших разработчиков.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0">
+            <div class="card-body">
+              <h5 class="card-title">Поддержка 24/7</h5>
+              <p class="card-text">Наша команда готова помочь вам в любое время суток.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 {% endblock %}
