@@ -3,14 +3,14 @@ import psycopg2
 
 def create_database():
     try:
-        conn = psycopg2.connect(dbname="PostgreSQL 17", user="postgres",
-                                password="postgres", host="localhost")
+        conn = psycopg2.connect(user="postgres", password="postgres",
+                                host="localhost", port="5432")
         conn.autocommit = True
         cur = conn.cursor()
 
         # Создаем базу данных
         cur.execute("CREATE DATABASE games;")
-        print("Database 'games' created successfully")
+        print("БД 'games' создана")
 
         cur.close()
         conn.close()
@@ -22,7 +22,8 @@ def create_database():
 def create_tables():
     try:
         conn = psycopg2.connect(dbname="games", user="postgres",
-                                password="postgres", host="localhost")
+                                password="postgres",
+                                host="localhost", port="5432")
         cur = conn.cursor()
 
         # Список SQL запросов для создания таблиц
