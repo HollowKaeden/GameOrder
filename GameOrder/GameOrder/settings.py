@@ -70,6 +70,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+AUTHENTICATION_BACKENDS = [
+    'GameOrder.backends.CustomAuthBackend',
+]
+
 ROOT_URLCONF = 'GameOrder.urls'
 
 TEMPLATES_DIR = BASE_DIR / 'templates'
