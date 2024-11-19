@@ -15,12 +15,14 @@
             Главная
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link {% if view_name == 'admin_panel:tables' %}
-            active{% endif %}" href="{% url 'admin_panel:tables' %}">
-            Админ-панель
-          </a>
-        </li>
+        {% if user.is_authenticated and user.role == 'admin' %}
+          <li class="nav-item">
+            <a class="nav-link {% if view_name == 'admin_panel:tables' %}
+              active{% endif %}" href="{% url 'admin_panel:tables' %}">
+              Админ-панель
+            </a>
+          </li>
+        {% endif %}
         <li class="nav-item">
           <a class="nav-link {% if view_name == 'order_page:order' %}
             active{% endif %}" href="{% url 'order_page:order' %}">
@@ -33,12 +35,14 @@
             Авторизация
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link {% if view_name == 'registration:logout' %}
-            active{% endif %}" href="{% url 'registration:logout' %}">
-            Выйти
-          </a>
-        </li>
+        {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link {% if view_name == 'registration:logout' %}
+              active{% endif %}" href="{% url 'registration:logout' %}">
+              Выйти
+            </a>
+          </li>
+        {% endif %}
       </ul>
     </div>
   </nav>
