@@ -15,7 +15,7 @@
             Главная
           </a>
         </li>
-        {% if user.is_authenticated and user.role == 'admin' %}
+        {% if is_authenticated and user_role == 'admin' %}
           <li class="nav-item">
             <a class="nav-link {% if view_name == 'admin_panel:tables' %}
               active{% endif %}" href="{% url 'admin_panel:tables' %}">
@@ -29,13 +29,15 @@
             Заказать проект
           </a>
         </li>
+        {% if not is_authenticated %}
         <li class="nav-item">
           <a class="nav-link {% if view_name == 'registration:login' %}
             active{% endif %}" href="{% url 'registration:login' %}">
             Авторизация
           </a>
         </li>
-        {% if user.is_authenticated %}
+        {% endif %}
+        {% if is_authenticated %}
           <li class="nav-item">
             <a class="nav-link {% if view_name == 'registration:logout' %}
               active{% endif %}" href="{% url 'registration:logout' %}">

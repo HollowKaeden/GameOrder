@@ -1,5 +1,6 @@
 import psycopg2
 from django.conf import settings
+from django.contrib.auth.hashers import make_password
 
 
 def get_db_connection():
@@ -63,8 +64,8 @@ def create_tables():
         sql_queries = {
             "users": """CREATE TABLE users (
                 UserID SERIAL PRIMARY KEY,
-                Login VARCHAR(20) NOT NULL,
-                Password VARCHAR(50) NOT NULL,
+                Username VARCHAR(20) NOT NULL,
+                Password VARCHAR(100) NOT NULL,
                 FullName VARCHAR(70) NOT NULL,
                 Role VARCHAR(15) NOT NULL
             );""",
@@ -123,3 +124,38 @@ def create_tables():
 
     except Exception as e:
         print(f"Error while creating db tables: {e}")
+
+
+# GET queries
+def get_user_by_username(username):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+    user = cursor.fetchone()
+    return user
+
+
+def get_user_by_id(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE userid = %s", (id,))
+    user = cursor.fetchone()
+    return user
+
+
+# INSERT queries
+def create_user(username, password, full_name, role):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    hashed_password = make_password(password)
+
+    cursor.execute("INSERT INTO users (username, password, fullname, role)"
+                   "VALUES (%s, %s, %s, %s)",
+                   (username, hashed_password, full_name, role))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
