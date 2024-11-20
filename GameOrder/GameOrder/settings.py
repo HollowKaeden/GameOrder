@@ -57,7 +57,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'main.apps.MainConfig',
     'admin_panel.apps.AdminPanelConfig',
-    'order_page.apps.OrderPageConfig',
+    'orders.apps.OrdersConfig',
     'registration.apps.RegistrationConfig',
 ]
 

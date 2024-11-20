@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  Заказ
+{% endblock %}
+{% block content %}
+  <h1 class="text-center mb-4">Заказать проект</h1>
+  <form method="post" action="{% url 'orders:order' %}">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label for="task" class="form-label">Описание задачи</label>
+      <textarea id="task" name="task" class="form-control" rows="4" placeholder="Опишите, какой проект вы хотите заказать" required></textarea>
+    </div>
+    <div class="mb-3">
+      <label for="language" class="form-label">Язык программирования</label>
+      <select id="language" name="language" class="form-select" required>
+        <option value="" selected disabled>Выберите язык программирования</option>
+        {% for language in languages %}
+          <option value="{{ language.id }}">{{ language.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="engine" class="form-label">Игровой движок</label>
+      <select id="engine" name="engine" class="form-select" required>
+        <option value="" selected disabled>Выберите игровой движок</option>
+        {% for engine in engines %}
+          <option value="{{ engine.EngineID }}">{{ engine.Name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="genre" class="form-label">Жанр</label>
+      <select id="genre" name="genre" class="form-select" required>
+        <option value="" selected disabled>Выберите жанр</option>
+        {% for genre in genres %}
+          <option value="{{ genre.GenreID }}">{{ genre.Name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Отправить заявку</button>
+  </form>
+{% endblock %}

@@ -145,6 +145,42 @@ def get_user_by_id(id):
     return user
 
 
+def get_programming_languages_names():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM programming_languages")
+    languages = [{'id': language[0],
+                  'name': language[1],
+                  'description': language[2]}
+                 for language in cursor.fetchall()]
+    return languages
+
+
+def get_engines_names():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM engines")
+    engines = [{'id': engine[0],
+                'name': engine[1],
+                'description': engine[2]}
+               for engine in cursor.fetchall()]
+    return engines
+
+
+def get_genres_names():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM genres")
+    genres = [{'id': genre[0],
+               'name': genre[1],
+               'description': genre[2]}
+              for genre in cursor.fetchall()]
+    return genres
+
+
 # INSERT queries
 def create_user(username, password, full_name, role):
     conn = get_db_connection()

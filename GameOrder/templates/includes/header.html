@@ -23,9 +23,17 @@
             </a>
           </li>
         {% endif %}
+        {% if is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link {% if view_name == 'orders:my_orders' %}
+              active{% endif %}" href="{% url 'orders:my_orders' %}">
+              Мои заказы
+            </a>
+          </li>
+        {% endif %}
         <li class="nav-item">
-          <a class="nav-link {% if view_name == 'order_page:order' %}
-            active{% endif %}" href="{% url 'order_page:order' %}">
+          <a class="nav-link {% if view_name == 'orders:order' %}
+            active{% endif %}" href="{% url 'orders:order' %}">
             Заказать проект
           </a>
         </li>
