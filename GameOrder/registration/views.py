@@ -11,7 +11,6 @@ def register_view(request):
         full_name = request.POST['full_name']
         role = 'user'
 
-        # Зарегистрировать нового пользователя
         create_user(username, password, full_name, role)
 
         return redirect('registration:login')
