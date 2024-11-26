@@ -34,13 +34,14 @@ def create_database():
         if cur.fetchone():
             print(f"Database '{db_name}' already exists")
         else:
-            # Create the database
             cur.execute(f"CREATE DATABASE {db_name};")
             print(f"Created '{db_name}' database")
-            create_tables()
 
         cur.close()
         conn.close()
+        create_tables()
+        # Comment this if you don't want example data
+        fill_database()
 
     except Exception as e:
         print(f"Error while creating DB: {e}")
@@ -110,6 +111,16 @@ def create_tables():
                 REFERENCES engines (EngineID),
                 CONSTRAINT fk_application_genre FOREIGN KEY (GenreID)
                 REFERENCES genres (GenreID)
+            );""",
+
+            "user_application_connect":
+            """CREATE TABLE user_application_connect (
+                UserID INT NOT NULL,
+                ApplicationID int NOT NULL,
+                CONSTRAINT fk_user FOREIGN KEY (UserID)
+                REFERENCES users (userID),
+                CONSTRAINT fk_application FOREIGN KEY (ApplicationID)
+                REFERENCES applications (ApplicationID)
             );"""
         }
 
@@ -124,6 +135,66 @@ def create_tables():
 
     except Exception as e:
         print(f"Error while creating db tables: {e}")
+
+
+def fill_database():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    sql_queries = {
+        "programming_languages": """INSERT INTO programming_languages
+        (name, description) VALUES
+        ('C++', 'Высоко-производительный язык'),
+        ('Python', 'Гибкий и удобный для изучения'),
+        ('JavaScript', 'Популярный язык для веб-разработки');""",
+
+        "engines": """INSERT INTO engines
+        (name, techfeatures) VALUES
+        ('Unreal Engine', 'Продвинутая графика, совместимость с VR/AR'),
+        ('Unity', 'Кросс-платформенный, поддерживает 2D/3D'),
+        ('Godot', 'Открытый код, легкоёмкий');""",
+
+        "genres": """INSERT INTO genres
+        (name, description) VALUES
+        ('RPG', 'Ролевая игра'),
+        ('Platformer', 'Персонаж перемещается между платформами'),
+        ('Puzzle', 'Игра с упором на решение загадок');""",
+
+        "applications": """INSERT INTO applications
+        (status, task, languageid, engineid, genreid) VALUES
+        ('В процессе', 'Создать RPG с открытым миром', '1', '1', '1'),
+        ('Выполнено', 'Разработать 2D платформер с авторскими ассетами',
+         '2', '2', '2'),
+        ('В ожидании', 'Разработать мобильную пазл-игру', '3', '3', '3');""",
+
+        "users": f"""INSERT INTO users
+        (username, password, fullname, role) VALUES
+        ('admin', '{make_password('admin')}',
+         'Артамонов Иван Алексеевич', 'admin'),
+        ('Dmitry', '{make_password('passw0rd')}',
+         'Петров Дмитрий Владимирович', 'user'),
+        ('Olga', '{make_password('1234secure')}',
+         'Набокова Ольга Константиновна', 'user');""",
+
+        "contacts": """INSERT INTO contacts VALUES
+        ('1', '+1234567890', 'ivan@example.com'),
+        ('2', '+0987654321', 'dmitry@example.com'),
+        ('3', '+5544332211', 'olga@example.com');""",
+
+        "user_application_connect":
+        """INSERT INTO user_application_connect VALUES
+        ('1', '1'),
+        ('2', '2'),
+        ('3', '3');"""
+    }
+
+    for table_name, query in sql_queries.items():
+        cursor.execute(query)
+        print(f'Filled table {table_name} with data!')
+
+    cursor.close()
+    conn.commit()
+    conn.close()
 
 
 # GET queries
