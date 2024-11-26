@@ -216,7 +216,7 @@ def get_user_by_id(id):
     return user
 
 
-def get_programming_languages_names():
+def get_programming_languages():
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -228,7 +228,7 @@ def get_programming_languages_names():
     return languages
 
 
-def get_engines_names():
+def get_engines():
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -240,7 +240,7 @@ def get_engines_names():
     return engines
 
 
-def get_genres_names():
+def get_genres():
     conn = get_db_connection()
     cursor = conn.cursor()
 

@@ -1,15 +1,15 @@
 from django.shortcuts import render
-from utils.db_utils import (get_programming_languages_names,
-                            get_engines_names,
-                            get_genres_names)
+from utils.db_utils import (get_programming_languages,
+                            get_engines,
+                            get_genres)
 
 
 def order(request):
     template = 'orders/order.html'
 
-    languages = get_programming_languages_names()
-    engines = get_engines_names()
-    genres = get_genres_names()
+    languages = get_programming_languages()
+    engines = get_engines()
+    genres = get_genres()
     context = {
         'languages': languages,
         'engines': engines,
