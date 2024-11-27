@@ -36,12 +36,12 @@ def create_database():
         else:
             cur.execute(f"CREATE DATABASE {db_name};")
             print(f"Created '{db_name}' database")
+            create_tables()
+            # Comment this if you don't want example data
+            fill_database()
 
         cur.close()
         conn.close()
-        create_tables()
-        # Comment this if you don't want example data
-        fill_database()
 
     except Exception as e:
         print(f"Error while creating DB: {e}")
