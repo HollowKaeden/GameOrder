@@ -31,12 +31,14 @@
             </a>
           </li>
         {% endif %}
-        <li class="nav-item">
-          <a class="nav-link {% if view_name == 'orders:order' %}
-            active{% endif %}" href="{% url 'orders:order' %}">
-            Заказать проект
-          </a>
-        </li>
+        {% if is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link {% if view_name == 'orders:order' %}
+              active{% endif %}" href="{% url 'orders:order' %}">
+              Заказать проект
+            </a>
+          </li>
+        {% endif %}
         {% if not is_authenticated %}
         <li class="nav-item">
           <a class="nav-link {% if view_name == 'registration:login' %}

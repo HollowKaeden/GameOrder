@@ -266,3 +266,24 @@ def create_user(username, password, full_name, role):
     conn.commit()
     cursor.close()
     conn.close()
+
+
+def create_application(user_id, task, language_id, engine_id, genre_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO applications (status, task, languageid, engineid, genreid)
+        VALUES (%s, %s, %s, %s, %s) RETURNING applicationid;
+    """, ['В ожидании', task, language_id, engine_id, genre_id])
+
+    application_id = cursor.fetchone()[0]
+
+    cursor.execute("""
+        INSERT INTO user_application_connect (userid, applicationid)
+        VALUES (%s, %s);
+    """, [user_id, application_id])
+
+    cursor.close()
+    conn.commit()
+    conn.close()
