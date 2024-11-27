@@ -10,8 +10,10 @@ def register_view(request):
         password = request.POST['password']
         full_name = request.POST['full_name']
         role = 'user'
+        phone_number = request.POST['phone_number']
+        email = request.POST['email']
 
-        create_user(username, password, full_name, role)
+        create_user(username, password, full_name, role, phone_number, email)
 
         return redirect('registration:login')
 

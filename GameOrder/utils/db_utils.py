@@ -39,6 +39,7 @@ def create_database():
             create_tables()
             # Comment this if you don't want example data
             fill_database()
+            declare_additional_functional()
 
         cur.close()
         conn.close()
@@ -66,7 +67,7 @@ def create_tables():
             "users": """CREATE TABLE users (
                 UserID SERIAL PRIMARY KEY,
                 Username VARCHAR(20) NOT NULL,
-                Password VARCHAR(100) NOT NULL,
+                Password VARCHAR(128) NOT NULL,
                 FullName VARCHAR(70) NOT NULL,
                 Role VARCHAR(15) NOT NULL
             );""",
@@ -177,9 +178,9 @@ def fill_database():
          'Набокова Ольга Константиновна', 'user');""",
 
         "contacts": """INSERT INTO contacts VALUES
-        ('1', '+1234567890', 'ivan@example.com'),
-        ('2', '+0987654321', 'dmitry@example.com'),
-        ('3', '+5544332211', 'olga@example.com');""",
+        ('1', '+1(234)567-89-10', 'ivan@example.com'),
+        ('2', '+1(098)765-43-21', 'dmitry@example.com'),
+        ('3', '+5(444)333-22-11', 'olga@example.com');""",
 
         "user_application_connect":
         """INSERT INTO user_application_connect VALUES
@@ -191,6 +192,44 @@ def fill_database():
     for table_name, query in sql_queries.items():
         cursor.execute(query)
         print(f'Filled table {table_name} with data!')
+
+    cursor.close()
+    conn.commit()
+    conn.close()
+
+
+def declare_additional_functional():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    sql_queries = [
+        """
+        CREATE OR REPLACE FUNCTION AddNewUser(
+            user_login VARCHAR(20),
+            user_password VARCHAR(128),
+            user_fullname VARCHAR(70),
+            user_role VARCHAR(15),
+            user_phone_number VARCHAR(20),
+            user_email VARCHAR(50)
+        ) RETURNS VOID AS $$
+        DECLARE
+            new_user_id INT;
+        BEGIN
+            -- Вставка в таблицу пользователей
+            INSERT INTO "users" ("username", "password", "fullname", "role")
+            VALUES (user_login, user_password, user_fullname, user_role)
+            RETURNING "userid" INTO new_user_id;
+
+            -- Вставка в таблицу контактов
+            INSERT INTO contacts
+            VALUES (new_user_id, user_phone_number, user_email);
+        END;
+        $$ LANGUAGE plpgsql;"""
+    ]
+
+    for query in sql_queries:
+        cursor.execute(query)
+    print('Added procedures, functions and triggers!')
 
     cursor.close()
     conn.commit()
@@ -253,15 +292,15 @@ def get_genres():
 
 
 # INSERT queries
-def create_user(username, password, full_name, role):
+def create_user(username, password, full_name, role, phone_number, email):
     conn = get_db_connection()
     cursor = conn.cursor()
 
     hashed_password = make_password(password)
 
-    cursor.execute("INSERT INTO users (username, password, fullname, role)"
-                   "VALUES (%s, %s, %s, %s)",
-                   (username, hashed_password, full_name, role))
+    cursor.execute("""
+        SELECT AddNewUser(%s, %s, %s, %s, %s, %s);
+    """, [username, hashed_password, full_name, role, phone_number, email])
 
     conn.commit()
     cursor.close()
