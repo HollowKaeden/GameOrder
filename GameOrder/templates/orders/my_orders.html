@@ -4,5 +4,41 @@
   Мои заказы
 {% endblock %}
 {% block content %}
-  <h1>Мои заказы</h1>
+  <h2>Мои заказы</h2>
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Статус</th>
+        <th>Задача</th>
+        <th>Язык программирования</th>
+        <th>Игровой движок</th>
+        <th>Жанр</th>
+        <th>Действия</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if orders %}
+        {% for order in orders %}
+          <tr data-id="{{ order.id }}">
+            <td>{{ order.status }}</td>
+            <td>
+              <span class="editable-task">{{ order.task }}</span>
+              <input type="text" class="form-control task-input d-none" value="{{ order.task }}">
+            </td>
+            <td>{{ order.language }}</td>
+            <td>{{ order.engine }}</td>
+            <td>{{ order.genre }}</td>
+            <td>
+              <button class="btn btn-danger btn-sm delete-btn">Удалить</button>
+            </td>
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="6" class="text-center">У вас пока нет заказов.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+  </div>
 {% endblock %}

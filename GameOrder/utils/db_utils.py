@@ -291,6 +291,40 @@ def get_genres():
     return genres
 
 
+def get_user_applications(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT app.applicationid,
+               app.status,
+               app.task,
+               lang.name AS language,
+               eng.name AS engine,
+               genres.name AS genre
+        FROM applications AS app
+        JOIN user_application_connect AS uac ON
+        app.applicationid = uac.applicationid
+        JOIN programming_languages AS lang ON app.languageid = lang.languageid
+        JOIN engines as eng ON app.engineid = eng.engineid
+        JOIN genres ON app.genreid = genres.genreid
+        WHERE uac.userid = %s
+    """, [user_id])
+    applications = [
+        {
+            'id': row[0],
+            'status': row[1],
+            'task': row[2],
+            'language': row[3],
+            'engine': row[4],
+            'genre': row[5],
+        }
+        for row in cursor.fetchall()
+    ]
+
+    return applications
+
+
 # INSERT queries
 def create_user(username, password, full_name, role, phone_number, email):
     conn = get_db_connection()

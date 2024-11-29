@@ -4,7 +4,8 @@ from utils.decorators import login_required
 from utils.db_utils import (get_programming_languages,
                             get_engines,
                             get_genres,
-                            create_application)
+                            create_application,
+                            get_user_applications)
 
 
 @login_required
@@ -40,4 +41,9 @@ def order(request):
 @login_required
 def my_orders(request):
     template = 'orders/my_orders.html'
-    return render(request, template)
+    user_id = request.session['user_id']
+
+    applications = get_user_applications(user_id)
+
+    context = {'orders': applications}
+    return render(request, template, context)
