@@ -1,6 +1,6 @@
 import os
 from django.apps import AppConfig
-from utils.db_utils import create_database
+from utils.db_utils import setup_database
 
 
 class MainConfig(AppConfig):
@@ -10,4 +10,4 @@ class MainConfig(AppConfig):
     def ready(self):
         # Check for the main process
         if os.environ.get('RUN_MAIN') == 'true':
-            create_database()
+            setup_database()

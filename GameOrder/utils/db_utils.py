@@ -33,19 +33,16 @@ def create_database():
                     (db_name,))
         if cur.fetchone():
             print(f"Database '{db_name}' already exists")
+            return False
         else:
             cur.execute(f"CREATE DATABASE {db_name};")
             print(f"Created '{db_name}' database")
-            create_tables()
-            # Comment this if you don't want example data
-            fill_database()
-            declare_additional_functional()
-
-        cur.close()
-        conn.close()
-
+            return True
     except Exception as e:
         print(f"Error while creating DB: {e}")
+    finally:
+        cur.close()
+        conn.close()
 
 
 def create_table(cur, table_name, create_query):
@@ -129,13 +126,12 @@ def create_tables():
             create_table(cur, table_name, query)
 
         print("Created tables in the database!")
-
+    except Exception as e:
+        print(f"Error while creating db tables: {e}")
+    finally:
         cur.close()
         conn.commit()
         conn.close()
-
-    except Exception as e:
-        print(f"Error while creating db tables: {e}")
 
 
 def fill_database():
@@ -198,7 +194,7 @@ def fill_database():
     conn.close()
 
 
-def declare_additional_functional():
+def initialize_db_features():
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -215,12 +211,10 @@ def declare_additional_functional():
         DECLARE
             new_user_id INT;
         BEGIN
-            -- Вставка в таблицу пользователей
             INSERT INTO "users" ("username", "password", "fullname", "role")
             VALUES (user_login, user_password, user_fullname, user_role)
             RETURNING "userid" INTO new_user_id;
 
-            -- Вставка в таблицу контактов
             INSERT INTO contacts
             VALUES (new_user_id, user_phone_number, user_email);
         END;
@@ -236,6 +230,14 @@ def declare_additional_functional():
     conn.close()
 
 
+def setup_database():
+    if create_database():
+        create_tables()
+        # Comment this if you don't want example data
+        fill_database()
+        initialize_db_features()
+
+
 # GET queries
 def get_user_by_username(username):
     conn = get_db_connection()
@@ -243,6 +245,10 @@ def get_user_by_username(username):
 
     cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
     user = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
     return user
 
 
@@ -252,6 +258,10 @@ def get_user_by_id(id):
 
     cursor.execute("SELECT * FROM users WHERE userid = %s", (id,))
     user = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
     return user
 
 
@@ -264,6 +274,10 @@ def get_programming_languages():
                   'name': language[1],
                   'description': language[2]}
                  for language in cursor.fetchall()]
+
+    cursor.close()
+    conn.close()
+
     return languages
 
 
@@ -276,6 +290,10 @@ def get_engines():
                 'name': engine[1],
                 'description': engine[2]}
                for engine in cursor.fetchall()]
+
+    cursor.close()
+    conn.close()
+
     return engines
 
 
@@ -288,6 +306,10 @@ def get_genres():
                'name': genre[1],
                'description': genre[2]}
               for genre in cursor.fetchall()]
+
+    cursor.close()
+    conn.close()
+
     return genres
 
 
@@ -321,6 +343,9 @@ def get_user_applications(user_id):
         }
         for row in cursor.fetchall()
     ]
+
+    cursor.close()
+    conn.close()
 
     return applications
 
@@ -357,6 +382,6 @@ def create_application(user_id, task, language_id, engine_id, genre_id):
         VALUES (%s, %s);
     """, [user_id, application_id])
 
-    cursor.close()
     conn.commit()
+    cursor.close()
     conn.close()
