@@ -55,10 +55,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'rest_framework',
     'main.apps.MainConfig',
     'admin_panel.apps.AdminPanelConfig',
     'orders.apps.OrdersConfig',
     'registration.apps.RegistrationConfig',
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [

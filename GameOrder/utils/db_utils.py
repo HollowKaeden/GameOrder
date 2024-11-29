@@ -350,6 +350,19 @@ def get_user_applications(user_id):
     return applications
 
 
+def get_application(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM applications WHERE applicationid = %s",
+                   (id,))
+    application = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+    return application
+
+
 # INSERT queries
 def create_user(username, password, full_name, role, phone_number, email):
     conn = get_db_connection()
@@ -385,3 +398,68 @@ def create_application(user_id, task, language_id, engine_id, genre_id):
     conn.commit()
     cursor.close()
     conn.close()
+
+
+# UPDATE queries
+def update_application(pk, status, task, language_id, engine_id, genre_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    application = get_application(pk)
+    if not application:
+        return False
+
+    fields_to_update = list()
+    values = list()
+
+    if status:
+        fields_to_update.append("status = %s")
+        values.append(status)
+    if task:
+        fields_to_update.append("task = %s")
+        values.append(task)
+    if language_id:
+        fields_to_update.append("languageid = %s")
+        values.append(language_id)
+    if engine_id:
+        fields_to_update.append("engineid = %s")
+        values.append(engine_id)
+    if genre_id:
+        fields_to_update.append("genreid = %s")
+        values.append(genre_id)
+
+    if fields_to_update:
+        query = (f"UPDATE applications SET {', '.join(fields_to_update)} "
+                 f"WHERE applicationid = %s")
+        values.append(pk)
+        cursor.execute(query, values)
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return True
+
+
+# DELETE queries
+def delete_application(pk):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM applications WHERE applicationid = %s",
+                   (pk,))
+    application = cursor.fetchone()
+    if not application:
+        cursor.close()
+        conn.close()
+        return False
+
+    cursor.execute(("DELETE FROM user_application_connect "
+                    "WHERE applicationid = %s"), (pk, ))
+
+    cursor.execute("DELETE FROM applications WHERE applicationid = %s", (pk,))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return True

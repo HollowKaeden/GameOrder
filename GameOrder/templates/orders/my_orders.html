@@ -24,12 +24,13 @@
             <td>
               <span class="editable-task">{{ order.task }}</span>
               <input type="text" class="form-control task-input d-none" value="{{ order.task }}">
+              <button class="btn btn-sm btn-primary save-task d-none">Сохранить</button>
             </td>
             <td>{{ order.language }}</td>
             <td>{{ order.engine }}</td>
             <td>{{ order.genre }}</td>
             <td>
-              <button class="btn btn-danger btn-sm delete-btn">Удалить</button>
+              <button class="btn btn-danger btn-sm delete-btn" data-id="{{ order.id }}">Удалить</button>
             </td>
           </tr>
         {% endfor %}
@@ -41,4 +42,75 @@
     </tbody>
   </table>
   </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Enabling editing for task
+      document.querySelectorAll(".editable-task").forEach((span) => {
+        span.addEventListener("click", (event) => {
+          const taskRow = event.target.closest("tr");
+          const taskInput = taskRow.querySelector(".task-input");
+          const saveButton = taskRow.querySelector(".save-task");
+
+          // Show input field and hide span
+          taskInput.classList.remove("d-none");
+          saveButton.classList.remove("d-none");
+          event.target.classList.add("d-none");
+        });
+      });
+
+      // Saving the task after edit
+      document.querySelectorAll(".save-task").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          const taskRow = event.target.closest("tr");
+          const taskId = taskRow.dataset.id;
+          const newTask = taskRow.querySelector(".task-input").value;
+
+          if (newTask) {
+            const formData = new FormData();
+            formData.append("task", newTask);
+            
+            const patchUrlTemplate = "{% url 'api:patch_application' 0 %}";
+            const patchUrl = patchUrlTemplate.replace("0", taskId);
+
+            fetch(patchUrl, {
+              method: "PATCH",
+              body: formData,
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.status === "success") {
+                  location.reload();
+                } else {
+                  alert(data.message);
+                }
+              });
+          }
+        });
+      });
+    
+      // Task delete
+      document.querySelectorAll(".delete-btn").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          const taskId = event.target.dataset.id;
+          const deleteUrlTemplate = "{% url 'api:delete_application' 0 %}";
+          const deleteUrl = deleteUrlTemplate.replace("0", taskId);
+
+          if (confirm("Вы уверены, что хотите удалить эту задачу?")) {
+            fetch(deleteUrl, {
+              method: "DELETE"
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.status === "success") {
+                  alert("Задача успешно удалена");
+                  location.reload();
+                } else {
+                  alert(data.message);
+                }
+              });
+          }
+        });
+      });
+    });
+  </script>
 {% endblock %}

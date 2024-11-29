@@ -5,5 +5,6 @@ urlpatterns = [
     path('orders/', include('orders.urls', namespace='orders')),
     path('registration/', include('registration.urls',
                                   namespace='registration')),
+    path('api/', include('api.urls', namespace='api')),
     path('', include('main.urls', namespace='main')),
 ]
