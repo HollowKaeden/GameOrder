@@ -3,7 +3,8 @@ from rest_framework.decorators import api_view
 from utils.db_utils import (update_application,
                             delete_application,
                             update_user,
-                            delete_user)
+                            delete_user,
+                            get_users)
 
 
 @api_view(['PATCH'])
@@ -56,3 +57,16 @@ def api_delete_user(request, pk):
     if application_deleted:
         return JsonResponse({'status': 'success', 'message': 'Задача удалена'})
     return JsonResponse({'status': 'error', 'message': 'Задача не найдена!'})
+
+
+@api_view(['POST'])
+def filter_users(request):
+    filters = {
+        'userid': request.data.get('id'),
+        'username': request.data.get('username'),
+        'fullname': request.data.get('fullname'),
+        'role': request.data.get('role')
+    }
+
+    users = get_users(filters)
+    return JsonResponse({'users': users})

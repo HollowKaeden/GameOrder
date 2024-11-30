@@ -7,6 +7,22 @@
   <h2>Админ-Панель</h2>
 
   <h3 class="mt-5">Таблица пользователей</h3>
+  
+  <div class="search-grid mt-3">
+    <div>
+      <input type="text" class="form-control search-input" data-column="id" placeholder="Поиск по ID">
+    </div>
+    <div>
+      <input type="text" class="form-control search-input" data-column="username" placeholder="Поиск по имени">
+    </div>
+    <div>
+      <input type="text" class="form-control search-input" data-column="fullname" placeholder="Поиск по ФИО">
+    </div>
+    <div>
+      <input type="text" class="form-control search-input" data-column="role" placeholder="Поиск по роли">
+    </div>
+  </div>
+
   <table class="table table-bordered mt-3">
     <thead>
       <tr>
@@ -18,7 +34,7 @@
         <th>Действия</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="table-body">
       {% for user in users %}
         <tr data-id="{{ user.id }}">
           <td>{{ user.id }}</td>
@@ -27,21 +43,19 @@
             <textarea class="form-control user-input d-none" 
                       rows="1" 
                       style="resize: none;
-                             overflow-wrap: break-word;
-                             width: 100%;"
+                            overflow-wrap: break-word;
+                            width: 100%;"
                       data-field="username">{{ user.username }}</textarea>
             <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
           </td>
-          <td>
-            {{ user.password }}
-          </td>
+          <td>{{ user.password }}</td>
           <td>
             <span class="editable-user">{{ user.fullname }}</span>
             <textarea class="form-control user-input d-none" 
                       rows="1" 
                       style="resize: none;
-                             overflow-wrap: break-word;
-                             width: 100%;"
+                            overflow-wrap: break-word;
+                            width: 100%;"
                       data-field="fullname">{{ user.fullname }}</textarea>
             <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
           </td>
@@ -50,8 +64,8 @@
             <textarea class="form-control user-input d-none" 
                       rows="1" 
                       style="resize: none;
-                             overflow-wrap: break-word;
-                             width: 100%;"
+                            overflow-wrap: break-word;
+                            width: 100%;"
                       data-field="role">{{ user.role }}</textarea>
             <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
           </td>
@@ -62,106 +76,154 @@
       {% endfor %}
     </tbody>
   </table>
+
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // Enable editing
-      document.querySelectorAll(".editable-user").forEach((span) => {
-        span.addEventListener("click", (event) => {
-          const parent = event.target.closest("td");
-          const textarea = parent.querySelector(".user-input");
-          const saveButton = parent.querySelector(".save-user");
-
-          // Show textarea and save button, hide span
-          textarea.classList.remove("d-none");
-          saveButton.classList.remove("d-none");
-          span.classList.add("d-none");
-
-          // Adjust textarea height to content
-          textarea.style.height = "auto";
-          textarea.style.height = `${textarea.scrollHeight}px`;
-
-          textarea.focus();
-          textarea.select();
+      const tableBody = document.getElementById("table-body");
+      const searchInputs = document.querySelectorAll(".search-input");
+  
+      // Debounce to optimize filtering
+      const debounce = (func, delay) => {
+        let timeout;
+        return (...args) => {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func(...args), delay);
+        };
+      };
+  
+      // Re-initialize events
+      const initTableEvents = () => {
+        // Editing
+        tableBody.querySelectorAll(".editable-user").forEach((span) => {
+          span.addEventListener("click", (event) => {
+            const parent = event.target.closest("td");
+            const textarea = parent.querySelector(".user-input");
+            const saveButton = parent.querySelector(".save-user");
+  
+            textarea.classList.remove("d-none");
+            saveButton.classList.remove("d-none");
+            span.classList.add("d-none");
+  
+            textarea.style.height = "auto";
+            textarea.style.height = `${textarea.scrollHeight}px`;
+            textarea.focus();
+            textarea.select();
+          });
         });
-      });
-
-      // Save edits
-      document.querySelectorAll(".save-user").forEach((button) => {
-        button.addEventListener("click", (event) => {
-          const row = event.target.closest("tr");
-          const userId = row.dataset.id;
-          const parent = event.target.closest("td");
-          const textarea = parent.querySelector(".user-input");
-          const span = parent.querySelector(".editable-user");
-          const closestHeader = event.target.closest("th");
-          const newValue = textarea.value;
-
-          if (newValue.trim()) {
-            const patchUrlTemplate = "{% url 'api:patch_user' 0 %}";
-            const patchUrl = patchUrlTemplate.replace("0", userId);
-
-            const body = {};
-
-            body[textarea.getAttribute("data-field")] = newValue;
-
-            fetch(patchUrl, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(body),
-            })
-              .then((response) => response.json())
-              .then((data) => {
-                if (data.status === "success") {
-                  span.textContent = newValue;
-                } else {
-                  alert(data.message);
-                }
+  
+        // Save changes
+        tableBody.querySelectorAll(".save-user").forEach((button) => {
+          button.addEventListener("click", (event) => {
+            const row = event.target.closest("tr");
+            const userId = row.dataset.id;
+            const parent = event.target.closest("td");
+            const textarea = parent.querySelector(".user-input");
+            const span = parent.querySelector(".editable-user");
+            const newValue = textarea.value.trim();
+  
+            if (newValue) {
+              fetch(`{% url 'api:patch_user' 0 %}`.replace("0", userId), {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  [textarea.getAttribute("data-field")]: newValue,
+                }),
               })
-              .catch((error) => console.error("Ошибка:", error))
-              .finally(() => {
-                textarea.classList.add("d-none");
-                span.classList.remove("d-none");
-                button.classList.add("d-none");
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.status === "success") {
+                    span.textContent = newValue;
+                  } else {
+                    alert(data.message);
+                  }
+                })
+                .catch((error) => console.error("Ошибка:", error))
+                .finally(() => {
+                  textarea.classList.add("d-none");
+                  span.classList.remove("d-none");
+                  button.classList.add("d-none");
+                });
+            }
+          });
+        });
+  
+        // Delete
+        tableBody.querySelectorAll(".delete-user").forEach((button) => {
+          button.addEventListener("click", (event) => {
+            const userId = event.target.dataset.id;
+            if (confirm("Вы уверены, что хотите удалить этого пользователя?")) {
+              fetch(`{% url 'api:delete_user' 0 %}`.replace("0", userId), {
+                method: "DELETE",
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.status === "success") {
+                    event.target.closest("tr").remove();
+                  } else {
+                    alert(data.message);
+                  }
+                })
+                .catch((error) => console.error("Ошибка:", error));
+            }
+          });
+        });
+      };
+  
+      // Filtering and updating the table
+      const fetchFilteredData = debounce(() => {
+        const filters = {};
+        searchInputs.forEach((input) => {
+          const value = input.value.trim();
+          if (value) filters[input.dataset.column] = value;
+        });
+  
+        fetch("{% url 'api:filter_users' %}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+          body: JSON.stringify(filters),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            tableBody.innerHTML = "";
+            if (data.users.length > 0) {
+              data.users.forEach((user) => {
+                const row = `
+                  <tr data-id="${user.id}">
+                    <td>${user.id}</td>
+                    <td>
+                      <span class="editable-user">${user.username}</span>
+                      <textarea class="form-control user-input d-none" rows="1" data-field="username">${user.username}</textarea>
+                      <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
+                    </td>
+                    <td>${user.password}</td>
+                    <td>
+                      <span class="editable-user">${user.fullname}</span>
+                      <textarea class="form-control user-input d-none" rows="1" data-field="fullname">${user.fullname}</textarea>
+                      <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
+                    </td>
+                    <td>
+                      <span class="editable-user">${user.role}</span>
+                      <textarea class="form-control user-input d-none" rows="1" data-field="role">${user.role}</textarea>
+                      <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-danger delete-user" data-id="${user.id}">Удалить</button>
+                    </td>
+                  </tr>
+                `;
+                tableBody.insertAdjacentHTML("beforeend", row);
               });
-          }
-        });
-      });
-
-
-      // Auto-resize textarea on input
-      document.querySelectorAll(".user-input").forEach((textarea) => {
-        textarea.addEventListener("input", (event) => {
-          event.target.style.height = "auto";
-          event.target.style.height = `${event.target.scrollHeight}px`;
-        });
-      });
-
-      // Delete user
-      document.querySelectorAll(".delete-user").forEach((button) => {
-        button.addEventListener("click", (event) => {
-          const userId = event.target.dataset.id;
-
-          if (confirm("Вы уверены, что хотите удалить этого пользователя?")) {
-            const deleteUrlTemplate = "{% url 'api:delete_user' 0 %}";
-            const deleteUrl = deleteUrlTemplate.replace("0", userId);
-
-            fetch(deleteUrl, {
-              method: "DELETE",
-            })
-              .then((response) => response.json())
-              .then((data) => {
-                if (data.status === "success") {
-                  event.target.closest("tr").remove();
-                } else {
-                  alert(data.message);
-                }
-              })
-              .catch((error) => console.error("Ошибка:", error));
-          }
-        });
-      });
+            } else {
+              tableBody.innerHTML = "<tr><td colspan='6' class='text-center'>Нет данных</td></tr>";
+            }
+            initTableEvents(); // Re-initialize events
+          })
+          .catch((error) => console.error("Ошибка при фильтрации:", error));
+      }, 300);
+  
+      searchInputs.forEach((input) => input.addEventListener("input", fetchFilteredData));
+  
+      initTableEvents();
     });
-  </script>
+  </script>  
 {% endblock %}

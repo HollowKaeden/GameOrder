@@ -16,5 +16,8 @@ urlpatterns = [
          name='patch_user'),
     path('user/<int:pk>/delete',
          views.api_delete_user,
-         name='delete_user')
+         name='delete_user'),
+    path('users/',
+         views.filter_users,
+         name='filter_users'),
 ]

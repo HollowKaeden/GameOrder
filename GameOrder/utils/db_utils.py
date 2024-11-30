@@ -239,11 +239,25 @@ def setup_database():
 
 
 # GET queries
-def get_users():
+def get_users(filters=None):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM users")
+    if filters:
+        query_filters = list()
+        params = list()
+        for column, value in filters.items():
+            if value and column != 'userid':
+                query_filters.append(f'{column} ILIKE %s')
+                params.append(f'%{value}%')
+        where_clause = ' AND '.join(query_filters) if query_filters else '1=1'
+        if filters.get('userid'):
+            where_clause += ' AND userid = %s'
+            params.append(filters['userid'])
+        cursor.execute(f"SELECT * FROM users "
+                       f"WHERE {where_clause}", params)
+    else:
+        cursor.execute("SELECT * FROM users")
     users = [{'id': user[0],
               'username': user[1],
               'password': user[2],
