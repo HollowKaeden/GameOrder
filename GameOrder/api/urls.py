@@ -11,4 +11,10 @@ urlpatterns = [
     path('application/<int:pk>/delete',
          views.api_delete_application,
          name='delete_application'),
+    path('user/<int:pk>/patch',
+         views.api_patch_user,
+         name='patch_user'),
+    path('user/<int:pk>/delete',
+         views.api_delete_user,
+         name='delete_user')
 ]

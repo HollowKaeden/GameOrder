@@ -239,6 +239,24 @@ def setup_database():
 
 
 # GET queries
+def get_users():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users")
+    users = [{'id': user[0],
+              'username': user[1],
+              'password': user[2],
+              'fullname': user[3],
+              'role': user[4]}
+             for user in cursor.fetchall()]
+
+    cursor.close()
+    conn.close()
+
+    return users
+
+
 def get_user_by_username(username):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -252,7 +270,7 @@ def get_user_by_username(username):
     return user
 
 
-def get_user_by_id(id):
+def get_user(id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -401,7 +419,17 @@ def create_application(user_id, task, language_id, engine_id, genre_id):
 
 
 # UPDATE queries
-def update_application(pk, status, task, language_id, engine_id, genre_id):
+def create_update_lists(db_fields, parameters):
+    fields_to_update = list()
+    values = list()
+    for key, value in parameters.items():
+        if key in db_fields and value:
+            fields_to_update.append(f"{key} = %s")
+            values.append(value)
+    return fields_to_update, values
+
+
+def update_application(pk, parameters):
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -409,28 +437,36 @@ def update_application(pk, status, task, language_id, engine_id, genre_id):
     if not application:
         return False
 
-    fields_to_update = list()
-    values = list()
-
-    if status:
-        fields_to_update.append("status = %s")
-        values.append(status)
-    if task:
-        fields_to_update.append("task = %s")
-        values.append(task)
-    if language_id:
-        fields_to_update.append("languageid = %s")
-        values.append(language_id)
-    if engine_id:
-        fields_to_update.append("engineid = %s")
-        values.append(engine_id)
-    if genre_id:
-        fields_to_update.append("genreid = %s")
-        values.append(genre_id)
+    db_fields = ('status', 'task', 'languageid', 'engineid', 'genreid')
+    fields_to_update, values = create_update_lists(db_fields, parameters)
 
     if fields_to_update:
         query = (f"UPDATE applications SET {', '.join(fields_to_update)} "
                  f"WHERE applicationid = %s")
+        values.append(pk)
+        cursor.execute(query, values)
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return True
+
+
+def update_user(pk, parameters):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    user = get_user(pk)
+    if not user:
+        return False
+
+    db_fields = ('username, password, fullname, role')
+    fields_to_update, values = create_update_lists(db_fields, parameters)
+
+    if fields_to_update:
+        query = (f"UPDATE users SET {', '.join(fields_to_update)} "
+                 f"WHERE userid = %s")
         values.append(pk)
         cursor.execute(query, values)
         conn.commit()
@@ -458,6 +494,33 @@ def delete_application(pk):
                     "WHERE applicationid = %s"), (pk, ))
 
     cursor.execute("DELETE FROM applications WHERE applicationid = %s", (pk,))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return True
+
+
+def delete_user(pk):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE userid = %s",
+                   (pk,))
+    user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        conn.close()
+        return False
+
+    cursor.execute(("DELETE FROM contacts "
+                    "WHERE userid = %s"), (pk, ))
+
+    cursor.execute(("DELETE FROM user_application_connect "
+                    "WHERE userid = %s"), (pk, ))
+
+    cursor.execute(("DELETE FROM users "
+                    "WHERE userid = %s"), (pk, ))
 
     conn.commit()
     cursor.close()

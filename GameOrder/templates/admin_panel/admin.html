@@ -4,5 +4,164 @@
   Админ-панель
 {% endblock %}
 {% block content %}
-  <h1>Админ-панель</h1>
+  <h2>Админ-Панель</h2>
+
+  <h3 class="mt-5">Таблица пользователей</h3>
+  <table class="table table-bordered mt-3">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Имя пользователя</th>
+        <th>Зашифрованный пароль</th>
+        <th>Полное имя</th>
+        <th>Роль</th>
+        <th>Действия</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+        <tr data-id="{{ user.id }}">
+          <td>{{ user.id }}</td>
+          <td>
+            <span class="editable-user">{{ user.username }}</span>
+            <textarea class="form-control user-input d-none" 
+                      rows="1" 
+                      style="resize: none;
+                             overflow-wrap: break-word;
+                             width: 100%;"
+                      data-field="username">{{ user.username }}</textarea>
+            <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
+          </td>
+          <td>
+            {{ user.password }}
+          </td>
+          <td>
+            <span class="editable-user">{{ user.fullname }}</span>
+            <textarea class="form-control user-input d-none" 
+                      rows="1" 
+                      style="resize: none;
+                             overflow-wrap: break-word;
+                             width: 100%;"
+                      data-field="fullname">{{ user.fullname }}</textarea>
+            <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
+          </td>
+          <td>
+            <span class="editable-user">{{ user.role }}</span>
+            <textarea class="form-control user-input d-none" 
+                      rows="1" 
+                      style="resize: none;
+                             overflow-wrap: break-word;
+                             width: 100%;"
+                      data-field="role">{{ user.role }}</textarea>
+            <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-danger delete-user" data-id="{{ user.id }}">Удалить</button>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Enable editing
+      document.querySelectorAll(".editable-user").forEach((span) => {
+        span.addEventListener("click", (event) => {
+          const parent = event.target.closest("td");
+          const textarea = parent.querySelector(".user-input");
+          const saveButton = parent.querySelector(".save-user");
+
+          // Show textarea and save button, hide span
+          textarea.classList.remove("d-none");
+          saveButton.classList.remove("d-none");
+          span.classList.add("d-none");
+
+          // Adjust textarea height to content
+          textarea.style.height = "auto";
+          textarea.style.height = `${textarea.scrollHeight}px`;
+
+          textarea.focus();
+          textarea.select();
+        });
+      });
+
+      // Save edits
+      document.querySelectorAll(".save-user").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          const row = event.target.closest("tr");
+          const userId = row.dataset.id;
+          const parent = event.target.closest("td");
+          const textarea = parent.querySelector(".user-input");
+          const span = parent.querySelector(".editable-user");
+          const closestHeader = event.target.closest("th");
+          const newValue = textarea.value;
+
+          if (newValue.trim()) {
+            const patchUrlTemplate = "{% url 'api:patch_user' 0 %}";
+            const patchUrl = patchUrlTemplate.replace("0", userId);
+
+            const body = {};
+
+            body[textarea.getAttribute("data-field")] = newValue;
+
+            fetch(patchUrl, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(body),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.status === "success") {
+                  span.textContent = newValue;
+                } else {
+                  alert(data.message);
+                }
+              })
+              .catch((error) => console.error("Ошибка:", error))
+              .finally(() => {
+                textarea.classList.add("d-none");
+                span.classList.remove("d-none");
+                button.classList.add("d-none");
+              });
+          }
+        });
+      });
+
+
+      // Auto-resize textarea on input
+      document.querySelectorAll(".user-input").forEach((textarea) => {
+        textarea.addEventListener("input", (event) => {
+          event.target.style.height = "auto";
+          event.target.style.height = `${event.target.scrollHeight}px`;
+        });
+      });
+
+      // Delete user
+      document.querySelectorAll(".delete-user").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          const userId = event.target.dataset.id;
+
+          if (confirm("Вы уверены, что хотите удалить этого пользователя?")) {
+            const deleteUrlTemplate = "{% url 'api:delete_user' 0 %}";
+            const deleteUrl = deleteUrlTemplate.replace("0", userId);
+
+            fetch(deleteUrl, {
+              method: "DELETE",
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.status === "success") {
+                  event.target.closest("tr").remove();
+                } else {
+                  alert(data.message);
+                }
+              })
+              .catch((error) => console.error("Ошибка:", error));
+          }
+        });
+      });
+    });
+  </script>
 {% endblock %}
