@@ -126,7 +126,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       const tableBody = document.getElementById("table-body");
       const searchInputs = document.querySelectorAll(".search-input");
-  
+    
       // Debounce to optimize filtering
       const debounce = (func, delay) => {
         let timeout;
@@ -135,180 +135,175 @@
           timeout = setTimeout(() => func(...args), delay);
         };
       };
-  
-      // Re-initialize events
-      const initTableEvents = () => {
-        // Editing
+    
+      // Helper to show/hide elements
+      const toggleVisibility = (elements, visible) => {
+        elements.forEach((el) => el.classList.toggle("d-none", !visible));
+      };
+    
+      // Initialize editing events
+      const setupEditingEvents = () => {
         tableBody.querySelectorAll(".editable-user").forEach((span) => {
-          span.addEventListener("click", (event) => {
-            const parent = event.target.closest("td");
+          span.addEventListener("click", ({ target }) => {
+            const parent = target.closest("td");
             const textarea = parent.querySelector(".user-input");
             const saveButton = parent.querySelector(".save-user");
-  
-            textarea.classList.remove("d-none");
-            saveButton.classList.remove("d-none");
-            span.classList.add("d-none");
-  
+    
+            toggleVisibility([textarea, saveButton], true);
+            toggleVisibility([span], false);
+    
             textarea.style.height = "auto";
             textarea.style.height = `${textarea.scrollHeight}px`;
             textarea.focus();
             textarea.select();
           });
         });
-  
-        // Save changes
+    
         tableBody.querySelectorAll(".save-user").forEach((button) => {
-          button.addEventListener("click", (event) => {
-            const row = event.target.closest("tr");
+          button.addEventListener("click", ({ target }) => {
+            const parent = target.closest("td");
+            const row = target.closest("tr");
             const userId = row.dataset.id;
-            const parent = event.target.closest("td");
             const textarea = parent.querySelector(".user-input");
             const span = parent.querySelector(".editable-user");
             const newValue = textarea.value.trim();
-  
+    
             if (newValue) {
-              fetch(`{% url 'api:patch_user' 0 %}`.replace("0", userId), {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  [textarea.getAttribute("data-field")]: newValue,
-                }),
-              })
-                .then((response) => response.json())
-                .then((data) => {
-                  if (data.status === "success") {
-                    span.textContent = newValue;
-                  } else {
-                    alert(data.message);
-                  }
+              updateUser(userId, textarea.getAttribute("data-field"), newValue)
+                .then(() => {
+                  span.textContent = newValue;
                 })
                 .catch((error) => console.error("Ошибка:", error))
                 .finally(() => {
-                  textarea.classList.add("d-none");
-                  span.classList.remove("d-none");
-                  button.classList.add("d-none");
+                  toggleVisibility([textarea, button], false);
+                  toggleVisibility([span], true);
                 });
             }
           });
         });
-  
-        // Delete
+      };
+    
+      // Send PATCH request to update user
+      const updateUser = (id, field, value) => {
+        return fetch(`{% url 'api:patch_user' 0 %}`.replace("0", id), {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [field]: value }),
+        }).then((response) => response.json());
+      };
+    
+      // Initialize delete events
+      const setupDeleteEvents = () => {
         tableBody.querySelectorAll(".delete-user").forEach((button) => {
-          button.addEventListener("click", (event) => {
-            const userId = event.target.dataset.id;
+          button.addEventListener("click", ({ target }) => {
+            const userId = target.dataset.id;
             if (confirm("Вы уверены, что хотите удалить этого пользователя?")) {
-              fetch(`{% url 'api:delete_user' 0 %}`.replace("0", userId), {
-                method: "DELETE",
-              })
-                .then((response) => response.json())
-                .then((data) => {
-                  if (data.status === "success") {
-                    event.target.closest("tr").remove();
-                  } else {
-                    alert(data.message);
-                  }
-                })
+              deleteUser(userId)
+                .then(() => target.closest("tr").remove())
                 .catch((error) => console.error("Ошибка:", error));
             }
           });
         });
       };
-  
-      // Filtering and updating the table
+    
+      // Send DELETE request to remove user
+      const deleteUser = (id) => {
+        return fetch(`{% url 'api:delete_user' 0 %}`.replace("0", id), {
+          method: "DELETE",
+        }).then((response) => response.json());
+      };
+    
+      // Fetch and update filtered data
       const fetchFilteredData = debounce(() => {
-        const filters = {};
-        searchInputs.forEach((input) => {
+        const filters = Array.from(searchInputs).reduce((acc, input) => {
           const value = input.value.trim();
-          if (value) filters[input.dataset.column] = value;
-        });
-  
+          if (value) acc[input.dataset.column] = value;
+          return acc;
+        }, {});
+    
         fetch("{% url 'api:filter_users' %}", {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
           body: JSON.stringify(filters),
         })
           .then((response) => response.json())
-          .then((data) => {
-            tableBody.innerHTML = "";
-            if (data.users.length > 0) {
-              data.users.forEach((user) => {
-                const row = `
-                  <tr data-id="${user.id}">
-                    <td>${user.id}</td>
-                    <td>
-                      <span class="editable-user">${user.username}</span>
-                      <textarea class="form-control user-input d-none" rows="1" data-field="username">${user.username}</textarea>
-                      <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
-                    </td>
-                    <td>${user.password}</td>
-                    <td>
-                      <span class="editable-user">${user.fullname}</span>
-                      <textarea class="form-control user-input d-none" rows="1" data-field="fullname">${user.fullname}</textarea>
-                      <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
-                    </td>
-                    <td>
-                      <span class="editable-user">${user.role}</span>
-                      <textarea class="form-control user-input d-none" rows="1" data-field="role">${user.role}</textarea>
-                      <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
-                    </td>
-                    <td>
-                      <button class="btn btn-sm btn-danger delete-user" data-id="${user.id}">Удалить</button>
-                    </td>
-                  </tr>
-                `;
-                tableBody.insertAdjacentHTML("beforeend", row);
-              });
-            } else {
-              tableBody.innerHTML = "<tr><td colspan='6' class='text-center'>Нет данных</td></tr>";
-            }
-            initTableEvents(); // Re-initialize events
-          })
+          .then((data) => updateTable(data.users))
           .catch((error) => console.error("Ошибка при фильтрации:", error));
       }, 300);
-  
-      searchInputs.forEach((input) => input.addEventListener("input", fetchFilteredData));
-  
-      initTableEvents();
-
-      const addUserBtn = document.getElementById("add-user-btn");
-      const saveNewUserBtn = document.getElementById("save-new-user-btn");
-
-      addUserBtn.addEventListener("click", () => {
-        const addUserModal = new bootstrap.Modal(document.getElementById("addUserModal"));
-        addUserModal.show();
-      });
-
-      saveNewUserBtn.addEventListener("click", () => {
-        const newUser = {
-          username: document.getElementById("new-user-username").value.trim(),
-          password: document.getElementById("new-user-password").value.trim(),
-          fullname: document.getElementById("new-user-fullname").value.trim(),
-          phone_number: document.getElementById("new-user-phone-number").value.trim(),
-          email: document.getElementById("new-user-email").value.trim(),
-        };
-
-        // Validate input
-        if (!newUser.username || !newUser.password || !newUser.fullname || !newUser.phone_number || !newUser.email) {
-          alert("Пожалуйста, заполните все поля.");
-          return;
-        }
-
-        // Send data to server
-        fetch("{% url 'api:add_user' %}", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
-          body: JSON.stringify(newUser),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.status === "success") {
-              location.reload(); // Reload to update user list
-            } else {
-              alert(data.message);
-            }
+    
+      // Update table content
+      const updateTable = (users) => {
+        tableBody.innerHTML = users.length
+          ? users
+              .map(
+                (user) => `
+                  <tr data-id="${user.id}">
+                    <td>${user.id}</td>
+                    <td>${createEditableCell(user.username, "username")}</td>
+                    <td>${user.password}</td>
+                    <td>${createEditableCell(user.fullname, "fullname")}</td>
+                    <td>${createEditableCell(user.role, "role")}</td>
+                    <td><button class="btn btn-sm btn-danger delete-user" data-id="${user.id}">Удалить</button></td>
+                  </tr>
+                `
+              )
+              .join("")
+          : "<tr><td colspan='6' class='text-center'>Нет данных</td></tr>";
+    
+        setupEditingEvents();
+        setupDeleteEvents();
+      };
+    
+      // Create an editable table cell
+      const createEditableCell = (value, field) => `
+        <span class="editable-user">${value}</span>
+        <textarea class="form-control user-input d-none" rows="1" data-field="${field}">${value}</textarea>
+        <button class="btn btn-sm btn-primary save-user d-none">Сохранить</button>
+      `;
+    
+      // Add user modal handling
+      const setupAddUserModal = () => {
+        const addUserBtn = document.getElementById("add-user-btn");
+        const saveNewUserBtn = document.getElementById("save-new-user-btn");
+    
+        addUserBtn.addEventListener("click", () => {
+          const addUserModal = new bootstrap.Modal(document.getElementById("addUserModal"));
+          addUserModal.show();
+        });
+    
+        saveNewUserBtn.addEventListener("click", () => {
+          const newUser = {
+            username: document.getElementById("new-user-username").value.trim(),
+            password: document.getElementById("new-user-password").value.trim(),
+            fullname: document.getElementById("new-user-fullname").value.trim(),
+            phone_number: document.getElementById("new-user-phone-number").value.trim(),
+            email: document.getElementById("new-user-email").value.trim(),
+          };
+    
+          if (Object.values(newUser).some((value) => !value)) {
+            alert("Пожалуйста, заполните все поля.");
+            return;
+          }
+    
+          fetch("{% url 'api:add_user' %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify(newUser),
           })
-          .catch((error) => console.error("Ошибка при добавлении пользователя:", error));
-      });
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.status === "success") location.reload();
+              else alert(data.message);
+            })
+            .catch((error) => console.error("Ошибка при добавлении пользователя:", error));
+        });
+      };
+    
+      searchInputs.forEach((input) => input.addEventListener("input", fetchFilteredData));
+    
+      setupEditingEvents();
+      setupDeleteEvents();
+      setupAddUserModal();
     });
-  </script>  
+  </script>
 {% endblock %}
