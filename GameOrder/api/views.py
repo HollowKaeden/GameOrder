@@ -4,7 +4,23 @@ from utils.db_utils import (update_application,
                             delete_application,
                             update_user,
                             delete_user,
-                            get_users)
+                            get_users,
+                            create_user)
+
+
+@api_view(['POST'])
+def add_user(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    full_name = request.data.get('fullname')
+    role = 'user'
+    phone_number = request.data.get('phone_number')
+    email = request.data.get('email')
+    print(username, password, full_name, role, phone_number, email)
+
+    create_user(username, password, full_name, role, phone_number, email)
+
+    return JsonResponse({'status': 'success'})
 
 
 @api_view(['PATCH'])

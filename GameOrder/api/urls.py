@@ -20,4 +20,7 @@ urlpatterns = [
     path('users/',
          views.filter_users,
          name='filter_users'),
+    path('users/add',
+         views.add_user,
+         name='add_user'),
 ]

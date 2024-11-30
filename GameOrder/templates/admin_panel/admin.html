@@ -77,6 +77,51 @@
     </tbody>
   </table>
 
+  <div class="mt-3">
+    <button class="btn btn-success" id="add-user-btn">Добавить пользователя</button>
+  </div>
+
+  <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addUserModalLabel">Добавить нового пользователя</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="add-user-form">
+            <div class="mb-3">
+              <label for="new-user-username" class="form-label">Имя пользователя</label>
+              <input type="text" class="form-control" id="new-user-username" placeholder="Введите имя пользователя">
+            </div>
+            <div class="mb-3">
+              <label for="new-user-password" class="form-label">Пароль</label>
+              <input type="password" class="form-control" id="new-user-password" placeholder="Введите пароль">
+            </div>
+            <div class="mb-3">
+              <label for="new-user-fullname" class="form-label">Полное имя</label>
+              <input type="text" class="form-control" id="new-user-fullname" placeholder="Введите полное имя">
+            </div>
+            <div class="mb-3">
+              <label for="new-user-phone-number" class="form-label">Номер телефона</label>
+              <input type="text" class="form-control" id="new-user-phone-number" placeholder="Введите номер телефона">
+            </div>
+            <div class="mb-3">
+              <label for="new-user-email" class="form-label">Электронная почта</label>
+              <input type="text" class="form-control" id="new-user-email" placeholder="Введите электронную почту">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="button" class="btn btn-primary" id="save-new-user-btn">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const tableBody = document.getElementById("table-body");
@@ -224,6 +269,46 @@
       searchInputs.forEach((input) => input.addEventListener("input", fetchFilteredData));
   
       initTableEvents();
+
+      const addUserBtn = document.getElementById("add-user-btn");
+      const saveNewUserBtn = document.getElementById("save-new-user-btn");
+
+      addUserBtn.addEventListener("click", () => {
+        const addUserModal = new bootstrap.Modal(document.getElementById("addUserModal"));
+        addUserModal.show();
+      });
+
+      saveNewUserBtn.addEventListener("click", () => {
+        const newUser = {
+          username: document.getElementById("new-user-username").value.trim(),
+          password: document.getElementById("new-user-password").value.trim(),
+          fullname: document.getElementById("new-user-fullname").value.trim(),
+          phone_number: document.getElementById("new-user-phone-number").value.trim(),
+          email: document.getElementById("new-user-email").value.trim(),
+        };
+
+        // Validate input
+        if (!newUser.username || !newUser.password || !newUser.fullname || !newUser.phone_number || !newUser.email) {
+          alert("Пожалуйста, заполните все поля.");
+          return;
+        }
+
+        // Send data to server
+        fetch("{% url 'api:add_user' %}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+          body: JSON.stringify(newUser),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              location.reload(); // Reload to update user list
+            } else {
+              alert(data.message);
+            }
+          })
+          .catch((error) => console.error("Ошибка при добавлении пользователя:", error));
+      });
     });
   </script>  
 {% endblock %}
