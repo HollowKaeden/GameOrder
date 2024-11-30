@@ -23,7 +23,11 @@
             <td>{{ order.status }}</td>
             <td>
               <span class="editable-task">{{ order.task }}</span>
-              <input type="text" class="form-control task-input d-none" value="{{ order.task }}">
+              <textarea class="form-control task-input d-none" 
+                        rows="1" 
+                        style="resize: none;
+                               overflow-wrap: break-word;
+                               width: 100%;">{{ order.task }}</textarea>
               <button class="btn btn-sm btn-primary save-task d-none">Сохранить</button>
             </td>
             <td>{{ order.language }}</td>
@@ -53,7 +57,10 @@
 
           // Show input field and hide span
           taskInput.classList.remove("d-none");
+          taskInput.style.height = "auto";
+          taskInput.style.height = `${taskInput.scrollHeight}px`;
           saveButton.classList.remove("d-none");
+          
           event.target.classList.add("d-none");
         });
       });
