@@ -57,7 +57,7 @@
     const tableBody = document.getElementById("table-body");
     const searchInputs = document.querySelectorAll(".contact-search");
   
-    // Debounce для оптимизации фильтрации
+    // Debounce to optimize filtering
     const debounce = (func, delay) => {
       let timeout;
       return (...args) => {
@@ -66,12 +66,12 @@
       };
     };
   
-    // Показывать/скрывать элементы
+    // Helper to show/hide elements
     const toggleVisibility = (elements, visible) => {
       elements.forEach((el) => el.classList.toggle("d-none", !visible));
     };
   
-    // Установка событий редактирования
+    // Initialize editing events
     const setupEditingEvents = () => {
       tableBody.querySelectorAll(".editable-contact").forEach((span) => {
         span.addEventListener("click", ({ target }) => {
@@ -113,7 +113,7 @@
       });
     };
   
-    // Обновление контакта через PATCH
+    // Send PATCH request to update user
     const updateContact = (id, field, value) => {
       return fetch(`{% url 'api:patch_contact' 0 %}`.replace("0", id), {
         method: "PATCH",
@@ -122,7 +122,7 @@
       }).then((response) => response.json());
     };
   
-    // Установка событий удаления
+    // Initialize delete events
     const setupDeleteEvents = () => {
       tableBody.querySelectorAll(".delete-contact").forEach((button) => {
         button.addEventListener("click", ({ target }) => {
@@ -136,14 +136,14 @@
       });
     };
   
-    // Удаление контакта через DELETE
+    // Send DELETE request to remove user
     const deleteContact = (id) => {
       return fetch(`{% url 'api:delete_contact' 0 %}`.replace("0", id), {
         method: "DELETE",
       }).then((response) => response.json());
     };
   
-    // Фильтрация данных
+    // Fetch and update filtered data
     const fetchFilteredData = debounce(() => {
       const filters = Array.from(searchInputs).reduce((acc, input) => {
         const value = input.value.trim();
@@ -161,7 +161,7 @@
         .catch((error) => console.error("Ошибка при фильтрации:", error));
     }, 300);
   
-    // Обновление содержимого таблицы
+    // Update table content
     const updateTable = (contacts) => {
       tableBody.innerHTML = contacts.length
         ? contacts
@@ -182,14 +182,13 @@
       setupDeleteEvents();
     };
   
-    // Создание редактируемой ячейки
+    // Create an editable table cell
     const createEditableCell = (value, field) => `
       <span class="editable-contact">${value}</span>
       <textarea class="form-control contact-input d-none" rows="1" data-field="${field}">${value}</textarea>
       <button class="btn btn-sm btn-primary save-contact d-none">Сохранить</button>
     `;
   
-    // Привязка обработчиков событий
     searchInputs.forEach((input) => input.addEventListener("input", fetchFilteredData));
   
     setupEditingEvents();
