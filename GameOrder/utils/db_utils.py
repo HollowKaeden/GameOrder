@@ -340,6 +340,47 @@ def get_contact(id):
     return contact
 
 
+def get_user_application_connects(filters=None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if filters:
+        query_filters = list()
+        params = list()
+        for column, value in filters.items():
+            if value:
+                query_filters.append(f'{column} = %s')
+                params.append(value)
+        where_clause = ' AND '.join(query_filters) if query_filters else '1=1'
+        cursor.execute(f"SELECT * FROM user_application_connect "
+                       f"WHERE {where_clause}", params)
+    else:
+        cursor.execute("SELECT * FROM user_application_connect")
+    connections = [{'userid': uac[0],
+                    'applicationid': uac[1]}
+                   for uac in cursor.fetchall()]
+
+    cursor.close()
+    conn.close()
+
+    return connections
+
+
+def get_user_application_connect(userid, applicationid):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM user_application_connect "
+                   "WHERE userid = %s AND applicationid = %s",
+                   (userid, applicationid))
+    connection = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return connection
+
+
 def get_programming_languages():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -425,6 +466,28 @@ def get_user_applications(user_id):
     return applications
 
 
+def get_applications():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM applications")
+    applications = [
+        {
+            'id': row[0],
+            'status': row[1],
+            'task': row[2],
+            'language': row[3],
+            'engine': row[4],
+            'genre': row[5],
+        }
+        for row in cursor.fetchall()
+    ]
+
+    cursor.close()
+    conn.close()
+    return applications
+
+
 def get_application(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -448,6 +511,19 @@ def create_user(username, password, full_name, role, phone_number, email):
     cursor.execute("""
         SELECT AddNewUser(%s, %s, %s, %s, %s, %s);
     """, [username, hashed_password, full_name, role, phone_number, email])
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def create_connection(userid, applicationid):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO user_application_connect VALUES (%s, %s);
+    """, [userid, applicationid])
 
     conn.commit()
     cursor.close()
@@ -625,6 +701,26 @@ def delete_contact(pk):
 
     cursor.execute(("DELETE FROM users "
                     "WHERE userid = %s"), (pk, ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return True
+
+
+def delete_connection(userid, applicationid):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    connection = get_user_application_connect(userid, applicationid)
+    if not connection:
+        cursor.close()
+        conn.close()
+        return False
+
+    cursor.execute(("DELETE FROM user_application_connect "
+                    "WHERE userid = %s AND applicationid = %s"),
+                   (userid, applicationid))
 
     conn.commit()
     cursor.close()

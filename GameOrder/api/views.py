@@ -7,6 +7,10 @@ from utils.db_utils import (get_users,
                             get_contacts,
                             update_contact,
                             delete_contact,
+                            get_user_application_connects,
+                            create_connection,
+                            delete_connection,
+                            get_applications,
                             update_application,
                             delete_application,
                             )
@@ -33,7 +37,6 @@ def add_user(request):
     role = 'user'
     phone_number = request.data.get('phone_number')
     email = request.data.get('email')
-    print(username, password, full_name, role, phone_number, email)
 
     create_user(username, password, full_name, role, phone_number, email)
 
@@ -100,6 +103,46 @@ def api_delete_contact(request, pk):
     if contact_deleted:
         return JsonResponse({'status': 'success', 'message': 'Задача удалена'})
     return JsonResponse({'status': 'error', 'message': 'Задача не найдена!'})
+
+
+@api_view(['POST'])
+def filter_connections(request):
+    filters = {
+        'userid': request.data.get('userid'),
+        'applicationid': request.data.get('applicationid')
+    }
+
+    connections = get_user_application_connects(filters)
+    return JsonResponse({'connections': connections})
+
+
+@api_view(['POST'])
+def add_connection(request):
+    userid = request.data.get('userid')
+    applicationid = request.data.get('applicationid')
+
+    create_connection(userid, applicationid)
+
+    return JsonResponse({'status': 'success'})
+
+
+@api_view(['DELETE'])
+def api_delete_connection(request):
+    userid = request.data.get('userid')
+    applicationid = request.data.get('applicationid')
+
+    connection_deleted = delete_connection(userid, applicationid)
+    if connection_deleted:
+        return JsonResponse({'status': 'success',
+                             'message': 'Соединение удалено'})
+    return JsonResponse({'status': 'error',
+                         'message': 'Соединение не найдено!'})
+
+
+@api_view(['GET'])
+def api_get_applications(request):
+    applications = get_applications()
+    return JsonResponse({'applications': applications})
 
 
 @api_view(['PATCH'])

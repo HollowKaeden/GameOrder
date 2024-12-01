@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect
 from utils.decorators import login_required
-from utils.db_utils import get_users, get_contacts
+from utils.db_utils import (get_users,
+                            get_contacts,
+                            get_user_application_connects)
 
 
 @login_required
@@ -12,6 +14,7 @@ def tables(request):
     context = {
         'users': get_users(),
         'contacts': get_contacts(),
+        'connections': get_user_application_connects(),
     }
 
     return render(request, template, context)
