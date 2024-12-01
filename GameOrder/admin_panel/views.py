@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from utils.decorators import login_required
-from utils.db_utils import get_users
+from utils.db_utils import get_users, get_contacts
 
 
 @login_required
@@ -9,6 +9,9 @@ def tables(request):
         return redirect('main:index')
     template = 'admin_panel/admin.html'
 
-    context = {'users': get_users()}
+    context = {
+        'users': get_users(),
+        'contacts': get_contacts(),
+    }
 
     return render(request, template, context)

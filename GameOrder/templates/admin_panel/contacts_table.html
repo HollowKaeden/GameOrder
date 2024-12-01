@@ -1,0 +1,198 @@
+<h3 class="mt-5">Таблица контактов</h3>
+
+<div class="search-grid mt-3">
+  <div>
+    <input type="text" class="form-control search-input contact-search" data-column="id" placeholder="Поиск по ID">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input contact-search" data-column="phonenumber" placeholder="Поиск по номеру телефона">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input contact-search" data-column="email" placeholder="Поиск по электронной почте">
+  </div>
+</div>
+
+<table class="table table-bordered mt-3" id="contact-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Номер телефона</th>
+      <th>Электронная почта</th>
+      <th>Действия</th>
+    </tr>
+  </thead>
+  <tbody id="table-body">
+    {% for contact in contacts %}
+      <tr data-id="{{ contact.id }}">
+        <td>{{ contact.id }}</td>
+        <td>
+          <span class="editable-contact">{{ contact.phonenumber }}</span>
+          <textarea class="form-control contact-input d-none" 
+                    rows="1" 
+                    style="resize: none;
+                          overflow-wrap: break-word;
+                          width: 100%;"
+                    data-field="PhoneNumber">{{ contact.phonenumber }}</textarea>
+          <button class="btn btn-sm btn-primary save-contact d-none">Сохранить</button>
+        </td>
+        <td>
+          <span class="editable-contact">{{ contact.email }}</span>
+          <textarea class="form-control contact-input d-none" 
+                    rows="1" 
+                    style="resize: none;
+                          overflow-wrap: break-word;
+                          width: 100%;"
+                    data-field="Email">{{ contact.email }}</textarea>
+          <button class="btn btn-sm btn-primary save-contact d-none">Сохранить</button>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-danger delete-contact" data-id="{{ contact.id }}">Удалить</button>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const tableBody = document.getElementById("table-body");
+    const searchInputs = document.querySelectorAll(".contact-search");
+  
+    // Debounce для оптимизации фильтрации
+    const debounce = (func, delay) => {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), delay);
+      };
+    };
+  
+    // Показывать/скрывать элементы
+    const toggleVisibility = (elements, visible) => {
+      elements.forEach((el) => el.classList.toggle("d-none", !visible));
+    };
+  
+    // Установка событий редактирования
+    const setupEditingEvents = () => {
+      tableBody.querySelectorAll(".editable-contact").forEach((span) => {
+        span.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const textarea = parent.querySelector(".contact-input");
+          const saveButton = parent.querySelector(".save-contact");
+  
+          toggleVisibility([textarea, saveButton], true);
+          toggleVisibility([span], false);
+  
+          textarea.style.height = "auto";
+          textarea.style.height = `${textarea.scrollHeight}px`;
+          textarea.focus();
+          textarea.select();
+        });
+      });
+  
+      tableBody.querySelectorAll(".save-contact").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const row = target.closest("tr");
+          const contactId = row.dataset.id;
+          const textarea = parent.querySelector(".contact-input");
+          const span = parent.querySelector(".editable-contact");
+          const newValue = textarea.value.trim();
+  
+          if (newValue) {
+            updateContact(contactId, textarea.getAttribute("data-field"), newValue)
+              .then(() => {
+                span.textContent = newValue;
+              })
+              .catch((error) => console.error("Ошибка:", error))
+              .finally(() => {
+                toggleVisibility([textarea, button], false);
+                toggleVisibility([span], true);
+              });
+          }
+        });
+      });
+    };
+  
+    // Обновление контакта через PATCH
+    const updateContact = (id, field, value) => {
+      return fetch(`{% url 'api:patch_contact' 0 %}`.replace("0", id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      }).then((response) => response.json());
+    };
+  
+    // Установка событий удаления
+    const setupDeleteEvents = () => {
+      tableBody.querySelectorAll(".delete-contact").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const contactId = target.dataset.id;
+          if (confirm("Вы уверены, что хотите удалить этот контакт?")) {
+            deleteContact(contactId)
+              .then(() => target.closest("tr").remove())
+              .catch((error) => console.error("Ошибка:", error));
+          }
+        });
+      });
+    };
+  
+    // Удаление контакта через DELETE
+    const deleteContact = (id) => {
+      return fetch(`{% url 'api:delete_contact' 0 %}`.replace("0", id), {
+        method: "DELETE",
+      }).then((response) => response.json());
+    };
+  
+    // Фильтрация данных
+    const fetchFilteredData = debounce(() => {
+      const filters = Array.from(searchInputs).reduce((acc, input) => {
+        const value = input.value.trim();
+        if (value) acc[input.dataset.column] = value;
+        return acc;
+      }, {});
+  
+      fetch("{% url 'api:filter_contacts' %}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+        body: JSON.stringify(filters),
+      })
+        .then((response) => response.json())
+        .then((data) => updateTable(data.contacts))
+        .catch((error) => console.error("Ошибка при фильтрации:", error));
+    }, 300);
+  
+    // Обновление содержимого таблицы
+    const updateTable = (contacts) => {
+      tableBody.innerHTML = contacts.length
+        ? contacts
+            .map(
+              (contact) => `
+                <tr data-id="${contact.id}">
+                  <td>${contact.id}</td>
+                  <td>${createEditableCell(contact.phonenumber, "PhoneNumber")}</td>
+                  <td>${createEditableCell(contact.email, "Email")}</td>
+                  <td><button class="btn btn-sm btn-danger delete-contact" data-id="${contact.id}">Удалить</button></td>
+                </tr>
+              `
+            )
+            .join("")
+        : "<tr><td colspan='4' class='text-center'>Нет данных</td></tr>";
+  
+      setupEditingEvents();
+      setupDeleteEvents();
+    };
+  
+    // Создание редактируемой ячейки
+    const createEditableCell = (value, field) => `
+      <span class="editable-contact">${value}</span>
+      <textarea class="form-control contact-input d-none" rows="1" data-field="${field}">${value}</textarea>
+      <button class="btn btn-sm btn-primary save-contact d-none">Сохранить</button>
+    `;
+  
+    // Привязка обработчиков событий
+    searchInputs.forEach((input) => input.addEventListener("input", fetchFilteredData));
+  
+    setupEditingEvents();
+    setupDeleteEvents();
+  });
+</script>

@@ -297,6 +297,49 @@ def get_user(id):
     return user
 
 
+def get_contacts(filters=None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if filters:
+        query_filters = list()
+        params = list()
+        for column, value in filters.items():
+            if value and column != 'userid':
+                query_filters.append(f'{column} ILIKE %s')
+                params.append(f'%{value}%')
+        where_clause = ' AND '.join(query_filters) if query_filters else '1=1'
+        if filters.get('userid'):
+            where_clause += ' AND userid = %s'
+            params.append(filters['userid'])
+        cursor.execute(f"SELECT * FROM contacts "
+                       f"WHERE {where_clause}", params)
+    else:
+        cursor.execute("SELECT * FROM contacts")
+    contacts = [{'id': contact[0],
+                 'phonenumber': contact[1],
+                 'email': contact[2]}
+                for contact in cursor.fetchall()]
+
+    cursor.close()
+    conn.close()
+
+    return contacts
+
+
+def get_contact(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM contacts WHERE userid = %s", (id,))
+    contact = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return contact
+
+
 def get_programming_languages():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -491,6 +534,30 @@ def update_user(pk, parameters):
     return True
 
 
+def update_contact(pk, parameters):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    user = get_contact(pk)
+    if not user:
+        return False
+
+    db_fields = ('phonenumber', 'email')
+    fields_to_update, values = create_update_lists(db_fields, parameters)
+
+    if fields_to_update:
+        query = (f"UPDATE contacts SET {', '.join(fields_to_update)} "
+                 f"WHERE userid = %s")
+        values.append(pk)
+        cursor.execute(query, values)
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return True
+
+
 # DELETE queries
 def delete_application(pk):
     conn = get_db_connection()
@@ -519,10 +586,33 @@ def delete_user(pk):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM users WHERE userid = %s",
-                   (pk,))
-    user = cursor.fetchone()
+    user = get_user(pk)
     if not user:
+        cursor.close()
+        conn.close()
+        return False
+
+    cursor.execute(("DELETE FROM contacts "
+                    "WHERE userid = %s"), (pk, ))
+
+    cursor.execute(("DELETE FROM user_application_connect "
+                    "WHERE userid = %s"), (pk, ))
+
+    cursor.execute(("DELETE FROM users "
+                    "WHERE userid = %s"), (pk, ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return True
+
+
+def delete_contact(pk):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    contact = get_contact(pk)
+    if not contact:
         cursor.close()
         conn.close()
         return False
