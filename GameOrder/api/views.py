@@ -14,6 +14,18 @@ from utils.db_utils import (get_users,
                             update_application,
                             create_application_only,
                             delete_application,
+                            get_genres,
+                            update_genre,
+                            create_genre,
+                            delete_genre,
+                            get_engines,
+                            update_engine,
+                            create_engine,
+                            delete_engine,
+                            get_programming_languages,
+                            update_language,
+                            create_language,
+                            delete_language
                             )
 
 
@@ -199,3 +211,160 @@ def api_delete_application(request, pk):
     if application_deleted:
         return JsonResponse({'status': 'success', 'message': 'Задача удалена'})
     return JsonResponse({'status': 'error', 'message': 'Задача не найдена!'})
+
+
+@api_view(['GET'])
+def api_get_genres(request):
+    genres = get_genres()
+    return JsonResponse({'genres': genres})
+
+
+@api_view(['POST'])
+def api_filter_genres(request):
+    filters = {
+        'genreid': request.data.get('genreid'),
+        'name': request.data.get('name'),
+        'description': request.data.get('description')
+    }
+    print(filters)
+
+    genres = get_genres(filters)
+
+    return JsonResponse({'genres': genres})
+
+
+@api_view(['PATCH'])
+def api_patch_genres(request, pk):
+    parameters = {
+        'name': request.data.get('name'),
+        'description': request.data.get('description')
+    }
+
+    success = update_genre(pk, parameters)
+
+    if not success:
+        return JsonResponse({'status': 'error',
+                             'message': 'Жанр не найден!'}, status=404)
+    return JsonResponse({'status': 'success', 'message': 'Жанр обновлен!'})
+
+
+@api_view(['POST'])
+def add_genre(request):
+    name = request.data.get('name')
+    description = request.data.get('description')
+
+    create_genre(name, description)
+
+    return JsonResponse({'status': 'success'})
+
+
+@api_view(['DELETE'])
+def api_delete_genre(request, pk):
+    genre_deleted = delete_genre(pk)
+    if genre_deleted:
+        return JsonResponse({'status': 'success', 'message': 'Жанр удален'})
+    return JsonResponse({'status': 'error', 'message': 'Жанр не найден!'})
+
+
+@api_view(['GET'])
+def api_get_engines(request):
+    engines = get_engines()
+    return JsonResponse({'engines': engines})
+
+
+@api_view(['POST'])
+def api_filter_engines(request):
+    filters = {
+        'engineid': request.data.get('engineid'),
+        'name': request.data.get('name'),
+        'techfeatures': request.data.get('description')
+    }
+
+    engines = get_engines(filters)
+
+    return JsonResponse({'engines': engines})
+
+
+@api_view(['PATCH'])
+def api_patch_engines(request, pk):
+    parameters = {
+        'name': request.data.get('name'),
+        'techfeatures': request.data.get('description')
+    }
+
+    success = update_engine(pk, parameters)
+
+    if not success:
+        return JsonResponse({'status': 'error',
+                             'message': 'Движок не найден!'}, status=404)
+    return JsonResponse({'status': 'success', 'message': 'Движок обновлен!'})
+
+
+@api_view(['POST'])
+def add_engine(request):
+    name = request.data.get('name')
+    description = request.data.get('description')
+
+    create_engine(name, description)
+
+    return JsonResponse({'status': 'success'})
+
+
+@api_view(['DELETE'])
+def api_delete_engine(request, pk):
+    engine_deleted = delete_engine(pk)
+    if engine_deleted:
+        return JsonResponse({'status': 'success', 'message': 'Движок удален'})
+    return JsonResponse({'status': 'error', 'message': 'Движок не найден!'})
+
+
+@api_view(['GET'])
+def api_get_languages(request):
+    languages = get_programming_languages()
+    return JsonResponse({'languages': languages})
+
+
+@api_view(['POST'])
+def api_filter_languages(request):
+    filters = {
+        'languageid': request.data.get('languageid'),
+        'name': request.data.get('name'),
+        'description': request.data.get('description')
+    }
+
+    languages = get_programming_languages(filters)
+
+    return JsonResponse({'languages': languages})
+
+
+@api_view(['PATCH'])
+def api_patch_languages(request, pk):
+    parameters = {
+        'name': request.data.get('name'),
+        'description': request.data.get('description')
+    }
+
+    success = update_language(pk, parameters)
+
+    if not success:
+        return JsonResponse({'status': 'error',
+                             'message': 'Язык не найден!'}, status=404)
+    return JsonResponse({'status': 'success', 'message': 'Язык обновлен!'})
+
+
+@api_view(['POST'])
+def add_language(request):
+    name = request.data.get('name')
+    description = request.data.get('description')
+
+    create_language(name, description)
+
+    return JsonResponse({'status': 'success'})
+
+
+@api_view(['DELETE'])
+def api_delete_language(request, pk):
+    language_deleted = delete_language(pk)
+    if language_deleted:
+        return JsonResponse({'status': 'success', 'message': 'Язык удален'})
+    return JsonResponse({'status': 'error', 'message': 'Язык не найден!'})

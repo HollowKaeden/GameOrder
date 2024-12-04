@@ -1,0 +1,289 @@
+<h3 class="mt-5">Таблица языков</h3>
+
+<div class="search-grid mt-3">
+  <div>
+    <input type="text" class="form-control search-input language-search" data-column="languageid" placeholder="Поиск по ID">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input language-search" data-column="name" placeholder="Поиск по названию">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input language-search" data-column="description" placeholder="Поиск по описанию">
+  </div>
+</div>
+
+<table class="table table-bordered mt-3" id="language-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Название</th>
+      <th>Описание</th>
+      <th>Действия</th>
+    </tr>
+  </thead>
+  <tbody id="language-table-body">
+    {% for language in languages %}
+      <tr data-id="{{ language.id }}">
+        <td>{{ language.id }}</td>
+        <td>
+          <span class="editable-language">{{ language.name }}</span>
+          <textarea class="form-control language-input d-none"
+                    rows="1"
+                    style="resize: none; overflow-wrap: break-word; width: 100%;"
+                    data-field="name">{{ language.name }}</textarea>
+          <button class="btn btn-sm btn-primary save-language d-none">Сохранить</button>
+        </td>
+        <td>
+          <span class="editable-description">{{ language.description }}</span>
+          <textarea class="form-control description-input d-none"
+                    rows="1"
+                    style="resize: none; overflow-wrap: break-word; width: 100%;"
+                    data-field="description">{{ language.description }}</textarea>
+          <button class="btn btn-sm btn-primary save-description d-none">Сохранить</button>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-danger delete-language" data-id="{{ language.id }}">Удалить</button>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="mt-3">
+  <button class="btn btn-success" id="add-language-btn">Добавить язык</button>
+</div>
+
+<div class="modal fade" id="addLanguageModal" tabindex="-1" aria-labelledby="addLanguageModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addLanguageModalLabel">Добавить новый язык</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="add-language-form">
+          <div class="mb-3">
+            <label for="new-language-name" class="form-label">Название</label>
+            <input type="text" class="form-control" id="new-language-name" placeholder="Введите название">
+          </div>
+          <div class="mb-3">
+            <label for="new-language-description" class="form-label">Описание</label>
+            <input type="text" class="form-control" id="new-language-description" placeholder="Введите описание">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" id="save-new-language-btn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const tableBody = document.getElementById("language-table-body");
+    const searchInputs = document.querySelectorAll(".language-search");
+
+    const debounce = (func, delay) => {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), delay);
+      };
+    };
+
+    const toggleVisibility = (elements, visible) => {
+      elements.forEach((el) => el.classList.toggle("d-none", !visible));
+    };
+
+    const setupEditingEvents = () => {
+      tableBody.querySelectorAll(".editable-language").forEach((span) => {
+        span.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const textarea = parent.querySelector(".language-input");
+          const saveButton = parent.querySelector(".save-language");
+
+          toggleVisibility([textarea, saveButton], true);
+          toggleVisibility([span], false);
+
+          textarea.style.height = "auto";
+          textarea.style.height = `${textarea.scrollHeight}px`;
+          textarea.focus();
+          textarea.select();
+        });
+      });
+
+      tableBody.querySelectorAll(".editable-description").forEach((span) => {
+        span.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const textarea = parent.querySelector(".description-input");
+          const saveButton = parent.querySelector(".save-description");
+
+          toggleVisibility([textarea, saveButton], true);
+          toggleVisibility([span], false);
+
+          textarea.style.height = "auto";
+          textarea.style.height = `${textarea.scrollHeight}px`;
+          textarea.focus();
+          textarea.select();
+        });
+      });
+
+      tableBody.querySelectorAll(".save-language").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const row = target.closest("tr");
+          const languageId = row.dataset.id;
+          const textarea = parent.querySelector(".language-input");
+          const span = parent.querySelector(".editable-language");
+          const newValue = textarea.value.trim();
+
+          if (newValue) {
+            updateLanguage(languageId, textarea.getAttribute("data-field"), newValue)
+              .then(() => {
+                span.textContent = newValue;
+              })
+              .catch((error) => console.error("Ошибка:", error))
+              .finally(() => {
+                toggleVisibility([textarea, button], false);
+                toggleVisibility([span], true);
+              });
+          }
+        });
+      });
+
+      tableBody.querySelectorAll(".save-description").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const row = target.closest("tr");
+          const languageId = row.dataset.id;
+          const textarea = parent.querySelector(".description-input");
+          const span = parent.querySelector(".editable-description");
+          const newValue = textarea.value.trim();
+
+          if (newValue) {
+            updateLanguage(languageId, textarea.getAttribute("data-field"), newValue)
+              .then(() => {
+                span.textContent = newValue;
+              })
+              .catch((error) => console.error("Ошибка:", error))
+              .finally(() => {
+                toggleVisibility([textarea, button], false);
+                toggleVisibility([span], true);
+              });
+          }
+        });
+      });
+    };
+
+    const updateLanguage = (id, field, value) => {
+      return fetch(`{% url 'api:patch_language' 0 %}`.replace("0", id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      }).then((response) => response.json());
+    };
+
+    const setupDeleteEvents = () => {
+      tableBody.querySelectorAll(".delete-language").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const languageId = target.dataset.id;
+          if (confirm("Вы уверены, что хотите удалить этот язык?")) {
+            deleteLanguage(languageId)
+              .then(() => target.closest("tr").remove())
+              .catch((error) => console.error("Ошибка:", error));
+          }
+        });
+      });
+    };
+
+    const deleteLanguage = (id) => {
+      return fetch(`{% url 'api:delete_language' 0 %}`.replace("0", id), {
+        method: "DELETE",
+      }).then((response) => response.json());
+    };
+
+    const fetchFilteredData = debounce(() => {
+      const filters = Array.from(searchInputs).reduce((acc, input) => {
+        const value = input.value.trim();
+        if (value) acc[input.dataset.column] = value;
+        return acc;
+      }, {});
+
+      fetch("{% url 'api:filter_languages' %}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+        body: JSON.stringify(filters),
+      })
+        .then((response) => response.json())
+        .then((data) => updateTable(data.languages))
+        .catch((error) => console.error("Ошибка при фильтрации:", error));
+    }, 300);
+
+    const updateTable = (languages) => {
+      tableBody.innerHTML = languages.length
+        ? languages
+            .map(
+              (language) => `
+                <tr data-id="${language.id}">
+                  <td>${language.id}</td>
+                  <td>${createEditableCell(language.name, "name")}</td>
+                  <td>${createEditableCell(language.description, "description")}</td>
+                  <td>
+                    <button class="btn btn-sm btn-danger delete-language" data-id="${language.id}">Удалить</button>
+                  </td>
+                </tr>
+              `
+            )
+            .join("")
+        : "<tr><td colspan='4' class='text-center'>Нет данных</td></tr>";
+
+      setupEditingEvents();
+      setupDeleteEvents();
+    };
+
+    document.getElementById("add-language-btn").addEventListener("click", () => {
+      const modal = new bootstrap.Modal(document.getElementById("addLanguageModal"));
+      modal.show();
+    });
+
+    document.getElementById("save-new-language-btn").addEventListener("click", () => {
+      const name = document.getElementById("new-language-name").value.trim();
+      const description = document.getElementById("new-language-description").value.trim();
+
+      fetch("{% url 'api:add_language' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": "{{ csrf_token }}",
+        },
+        body: JSON.stringify({ name, description }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status == "success") {
+            alert("Язык успешно добавлен!");
+            location.reload();
+          } else {
+            alert("Ошибка при добавлении языка: " + data.error);
+          }
+        })
+        .catch((error) => {
+          console.error("Ошибка при добавлении языка:", error);
+        });
+    });
+
+    const createEditableCell = (value, field) => `
+      <span class="editable-language">${value}</span>
+      <textarea class="form-control language-input d-none" rows="1" data-field="${field}">${value}</textarea>
+      <button class="btn btn-sm btn-primary save-language d-none">Сохранить</button>
+    `;
+
+    searchInputs.forEach((input) => input.addEventListener("input", fetchFilteredData));
+
+    setupEditingEvents();
+    setupDeleteEvents();
+  });
+</script>

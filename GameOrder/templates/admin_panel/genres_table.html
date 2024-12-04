@@ -1,0 +1,253 @@
+<h3 class="mt-5">Таблица жанров</h3>
+
+<div class="search-grid mt-3">
+  <div>
+    <input type="text" class="form-control search-input genre-search" data-column="genreid" placeholder="Поиск по ID">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input genre-search" data-column="name" placeholder="Поиск по названию жанра">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input genre-search" data-column="description" placeholder="Поиск по описанию">
+  </div>
+</div>
+
+<table class="table table-bordered mt-3" id="genre-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Название жанра</th>
+      <th>Описание</th>
+      <th>Действия</th>
+    </tr>
+  </thead>
+  <tbody id="genre-table-body">
+    {% for genre in genres %}
+      <tr data-id="{{ genre.id }}">
+        <td>{{ genre.id }}</td>
+        <td>
+          <span class="editable-genre-name">{{ genre.name }}</span>
+          <textarea class="form-control genre-name-input d-none" rows="1" data-field="name">{{ genre.name }}</textarea>
+          <button class="btn btn-sm btn-primary save-genre-name d-none">Сохранить</button>
+        </td>
+        <td>
+          <span class="editable-genre-description">{{ genre.description }}</span>
+          <textarea class="form-control genre-description-input d-none" rows="1" data-field="description">{{ genre.description }}</textarea>
+          <button class="btn btn-sm btn-primary save-genre-description d-none">Сохранить</button>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-danger delete-genre" data-id="{{ genre.id }}">Удалить</button>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="mt-3">
+  <button class="btn btn-success" id="add-genre-btn">Добавить жанр</button>
+</div>
+
+<div class="modal fade" id="addGenreModal" tabindex="-1" aria-labelledby="addGenreModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addGenreModalLabel">Добавить новый жанр</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="add-genre-form">
+          <div class="mb-3">
+            <label for="new-genre-name" class="form-label">Название жанра</label>
+            <input type="text" class="form-control" id="new-genre-name" placeholder="Введите название жанра">
+          </div>
+          <div class="mb-3">
+            <label for="new-genre-description" class="form-label">Описание</label>
+            <textarea class="form-control" id="new-genre-description" rows="3" placeholder="Введите описание жанра"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" id="save-new-genre-btn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const genreTableBody = document.getElementById("genre-table-body");
+    const searchInputs = document.querySelectorAll(".genre-search");
+
+    const debounce = (func, delay) => {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), delay);
+      };
+    };
+
+    const fetchFilteredGenres = debounce(() => {
+      const filters = Array.from(searchInputs).reduce((acc, input) => {
+        const value = input.value.trim();
+        if (value) acc[input.dataset.column] = value;
+        return acc;
+      }, {});
+
+      fetch("{% url 'api:filter_genres' %}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+        body: JSON.stringify(filters),
+      })
+        .then((response) => response.json())
+        .then((data) => updateGenreTable(data.genres))
+        .catch((error) => console.error("Ошибка при фильтрации:", error));
+    }, 300);
+
+    const updateGenreTable = (genres) => {
+      genreTableBody.innerHTML = genres.length
+        ? genres
+            .map(
+              (genre) => `
+              <tr data-id="${genre.id}">
+                <td>${genre.id}</td>
+                <td>${createEditableCell(genre.name, "name")}</td>
+                <td>${createEditableCell(genre.description, "description")}</td>
+                <td>
+                  <button class="btn btn-sm btn-danger delete-genre" data-id="${genre.id}">Удалить</button>
+                </td>
+              </tr>
+            `
+            )
+            .join("")
+        : "<tr><td colspan='4' class='text-center'>Нет данных</td></tr>";
+
+      setupGenreEvents();
+    };
+
+    const createEditableCell = (value, field) => `
+      <span class="editable-genre-${field}">${value}</span>
+      <textarea class="form-control genre-${field}-input d-none" rows="1" data-field="${field}">${value}</textarea>
+      <button class="btn btn-sm btn-primary save-genre-${field} d-none">Сохранить</button>
+    `;
+
+    const setupGenreEvents = () => {
+      genreTableBody.querySelectorAll(".editable-genre-name").forEach((span) => {
+        span.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const textarea = parent.querySelector(".genre-name-input");
+          const saveButton = parent.querySelector(".save-genre-name");
+
+          textarea.classList.remove("d-none");
+          saveButton.classList.remove("d-none");
+          span.classList.add("d-none");
+          textarea.focus();
+        });
+      });
+
+      genreTableBody.querySelectorAll(".editable-genre-description").forEach((span) => {
+        span.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const textarea = parent.querySelector(".genre-description-input");
+          const saveButton = parent.querySelector(".save-genre-description");
+
+          textarea.classList.remove("d-none");
+          saveButton.classList.remove("d-none");
+          span.classList.add("d-none");
+          textarea.focus();
+        });
+      });
+
+      genreTableBody.querySelectorAll(".save-genre-name").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const row = target.closest("tr");
+          const genreId = row.dataset.id;
+          const textarea = parent.querySelector(".genre-name-input");
+          const span = parent.querySelector(".editable-genre-name");
+          const newValue = textarea.value.trim();
+
+          fetch(`{% url 'api:patch_genre' 0 %}`.replace("0", genreId), {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({ name: newValue }),
+          })
+            .then((response) => response.json())
+            .then(() => {
+              span.textContent = newValue;
+            })
+            .catch((error) => console.error("Ошибка:", error))
+            .finally(() => {
+              textarea.classList.add("d-none");
+              button.classList.add("d-none");
+              span.classList.remove("d-none");
+            });
+        });
+      });
+
+      genreTableBody.querySelectorAll(".save-genre-description").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const row = target.closest("tr");
+          const genreId = row.dataset.id;
+          const textarea = parent.querySelector(".genre-description-input");
+          const span = parent.querySelector(".editable-genre-description");
+          const newValue = textarea.value.trim();
+
+          fetch(`{% url 'api:patch_genre' 0 %}`.replace("0", genreId), {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({ description: newValue }),
+          })
+            .then((response) => response.json())
+            .then(() => {
+              span.textContent = newValue;
+            })
+            .catch((error) => console.error("Ошибка:", error))
+            .finally(() => {
+              textarea.classList.add("d-none");
+              button.classList.add("d-none");
+              span.classList.remove("d-none");
+            });
+        });
+      });
+
+      genreTableBody.querySelectorAll(".delete-genre").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const genreId = target.dataset.id;
+          if (confirm("Вы уверены, что хотите удалить этот жанр?")) {
+            fetch(`{% url 'api:delete_genre' 0 %}`.replace("0", genreId), {
+              method: "DELETE",
+              headers: { "X-CSRFToken": "{{ csrf_token }}" },
+            })
+              .then(() => target.closest("tr").remove())
+              .catch((error) => console.error("Ошибка:", error));
+          }
+        });
+      });
+    };
+
+    document.getElementById("add-genre-btn").addEventListener("click", () => {
+      const modal = new bootstrap.Modal(document.getElementById("addGenreModal"));
+      modal.show();
+    });
+
+    document.getElementById("save-new-genre-btn").addEventListener("click", () => {
+      const genreName = document.getElementById("new-genre-name").value.trim();
+      const genreDescription = document.getElementById("new-genre-description").value.trim();
+
+      fetch("{% url 'api:add_genre' %}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+        body: JSON.stringify({ name: genreName, description: genreDescription }),
+      })
+        .then((response) => response.json())
+        .then(() => location.reload())
+        .catch((error) => console.error("Ошибка:", error));
+    });
+
+    searchInputs.forEach((input) => input.addEventListener("input", fetchFilteredGenres));
+    setupGenreEvents();
+  });
+</script>

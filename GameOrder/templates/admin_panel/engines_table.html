@@ -1,0 +1,286 @@
+<h3 class="mt-5">Таблица движков</h3>
+
+<!-- Фильтрация по столбцам -->
+<div class="search-grid mt-3">
+  <div>
+    <input type="text" class="form-control search-input engine-search" data-column="engineid" placeholder="Поиск по ID">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input engine-search" data-column="name" placeholder="Поиск по названию">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input engine-search" data-column="description" placeholder="Поиск по описанию">
+  </div>
+</div>
+
+<!-- Таблица с движками -->
+<table class="table table-bordered mt-3" id="engine-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Название</th>
+      <th>Описание</th> <!-- Новый столбец для описания -->
+      <th>Действия</th>
+    </tr>
+  </thead>
+  <tbody id="engine-table-body">
+    {% for engine in engines %}
+      <tr data-id="{{ engine.id }}">
+        <td>{{ engine.id }}</td>
+        <td>
+          <span class="editable-engine">{{ engine.name }}</span>
+          <textarea class="form-control engine-input d-none"
+                    rows="1"
+                    style="resize: none; overflow-wrap: break-word; width: 100%;"
+                    data-field="name">{{ engine.name }}</textarea>
+          <button class="btn btn-sm btn-primary save-engine d-none">Сохранить</button>
+        </td>
+        <td>
+          <span class="editable-description">{{ engine.description }}</span> <!-- Описание движка -->
+          <textarea class="form-control description-input d-none"
+                    rows="1"
+                    style="resize: none; overflow-wrap: break-word; width: 100%;"
+                    data-field="description">{{ engine.description }}</textarea>
+          <button class="btn btn-sm btn-primary save-description d-none">Сохранить</button>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-danger delete-engine" data-id="{{ engine.id }}">Удалить</button>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="mt-3">
+  <button class="btn btn-success" id="add-engine-btn">Добавить движок</button>
+</div>
+
+<!-- Модальное окно для добавления нового движка -->
+<div class="modal fade" id="addEngineModal" tabindex="-1" aria-labelledby="addEngineModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addEngineModalLabel">Добавить новый движок</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="add-engine-form">
+          <div class="mb-3">
+            <label for="new-engine-name" class="form-label">Название</label>
+            <input type="text" class="form-control" id="new-engine-name" placeholder="Введите название">
+          </div>
+          <div class="mb-3">
+            <label for="new-engine-description" class="form-label">Описание</label> <!-- Поле для описания -->
+            <textarea class="form-control" id="new-engine-description" rows="3" placeholder="Введите описание"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" id="save-new-engine-btn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const tableBody = document.getElementById("engine-table-body");
+    const searchInputs = document.querySelectorAll(".engine-search");
+
+    const debounce = (func, delay) => {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), delay);
+      };
+    };
+
+    const toggleVisibility = (elements, visible) => {
+      elements.forEach((el) => el.classList.toggle("d-none", !visible));
+    };
+
+    const setupEditingEvents = () => {
+      tableBody.querySelectorAll(".editable-engine").forEach((span) => {
+        span.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const textarea = parent.querySelector(".engine-input");
+          const saveButton = parent.querySelector(".save-engine");
+
+          toggleVisibility([textarea, saveButton], true);
+          toggleVisibility([span], false);
+
+          textarea.style.height = "auto";
+          textarea.style.height = `${textarea.scrollHeight}px`;
+          textarea.focus();
+          textarea.select();
+        });
+      });
+
+      tableBody.querySelectorAll(".editable-description").forEach((span) => {
+        span.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const textarea = parent.querySelector(".description-input");
+          const saveButton = parent.querySelector(".save-description");
+
+          toggleVisibility([textarea, saveButton], true);
+          toggleVisibility([span], false);
+
+          textarea.style.height = "auto";
+          textarea.style.height = `${textarea.scrollHeight}px`;
+          textarea.focus();
+          textarea.select();
+        });
+      });
+
+      tableBody.querySelectorAll(".save-engine").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const row = target.closest("tr");
+          const engineId = row.dataset.id;
+          const textarea = parent.querySelector(".engine-input");
+          const span = parent.querySelector(".editable-engine");
+          const newValue = textarea.value.trim();
+
+          if (newValue) {
+            updateEngine(engineId, textarea.getAttribute("data-field"), newValue)
+              .then(() => {
+                span.textContent = newValue;
+              })
+              .catch((error) => console.error("Ошибка:", error))
+              .finally(() => {
+                toggleVisibility([textarea, button], false);
+                toggleVisibility([span], true);
+              });
+          }
+        });
+      });
+
+      tableBody.querySelectorAll(".save-description").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const row = target.closest("tr");
+          const engineId = row.dataset.id;
+          const textarea = parent.querySelector(".description-input");
+          const span = parent.querySelector(".editable-description");
+          const newValue = textarea.value.trim();
+
+          if (newValue) {
+            updateEngine(engineId, textarea.getAttribute("data-field"), newValue)
+              .then(() => {
+                span.textContent = newValue;
+              })
+              .catch((error) => console.error("Ошибка:", error))
+              .finally(() => {
+                toggleVisibility([textarea, button], false);
+                toggleVisibility([span], true);
+              });
+          }
+        });
+      });
+    };
+
+    const updateEngine = (id, field, value) => {
+      return fetch(`{% url 'api:patch_engine' 0 %}`.replace("0", id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      }).then((response) => response.json());
+    };
+
+    const setupDeleteEvents = () => {
+      tableBody.querySelectorAll(".delete-engine").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const engineId = target.dataset.id;
+          if (confirm("Вы уверены, что хотите удалить этот движок?")) {
+            deleteEngine(engineId)
+              .then(() => target.closest("tr").remove())
+              .catch((error) => console.error("Ошибка:", error));
+          }
+        });
+      });
+    };
+
+    const deleteEngine = (id) => {
+      return fetch(`{% url 'api:delete_engine' 0 %}`.replace("0", id), {
+        method: "DELETE",
+      }).then((response) => response.json());
+    };
+
+    const fetchFilteredData = debounce(() => {
+      const filters = Array.from(searchInputs).reduce((acc, input) => {
+        const value = input.value.trim();
+        if (value) acc[input.dataset.column] = value;
+        return acc;
+      }, {});
+
+      fetch("{% url 'api:filter_engines' %}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+        body: JSON.stringify(filters),
+      })
+        .then((response) => response.json())
+        .then((data) => updateTable(data.engines))
+        .catch((error) => console.error("Ошибка:", error));
+    }, 300);
+
+    const updateTable = (engines) => {
+      const rows = engines.map((engine) => `
+        <tr data-id="${engine.id}">
+          <td>${engine.id}</td>
+          <td>${engine.name}</td>
+          <td>${engine.description}</td>
+          <td>
+            <button class="btn btn-sm btn-danger delete-engine" data-id="${engine.id}">Удалить</button>
+          </td>
+        </tr>
+      `).join("");
+
+      tableBody.innerHTML = rows;
+      setupEditingEvents();
+      setupDeleteEvents();
+    };
+
+    document.getElementById("add-engine-btn").addEventListener("click", () => {
+      const modal = new bootstrap.Modal(document.getElementById("addEngineModal"));
+      modal.show();
+    });
+
+    document.getElementById("save-new-engine-btn").addEventListener("click", () => {
+      const name = document.getElementById("new-engine-name").value.trim();
+      const description = document.getElementById("new-engine-description").value.trim();
+
+      if (name && description) {
+        addNewEngine(name, description).then(() => location.reload());
+      } else {
+        alert("Пожалуйста, заполните все поля!");
+      }
+    });
+
+    const addNewEngine = (name, description) => {
+      return fetch("{% url 'api:add_engine' %}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+        body: JSON.stringify({ name, description }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "success") {
+            alert("Движок успешно добавлен!");
+            location.reload();
+          } else {
+            alert("Ошибка при добавлении движка: " + data.error);
+          }
+        })
+        .catch((error) => {
+          console.error("Ошибка при добавлении движка:", error);
+        });
+    };
+
+    searchInputs.forEach((input) => input.addEventListener("input", fetchFilteredData));
+
+    setupEditingEvents();
+    setupDeleteEvents();
+  });
+</script>

@@ -381,11 +381,26 @@ def get_user_application_connect(userid, applicationid):
     return connection
 
 
-def get_programming_languages():
+def get_programming_languages(filters=None):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM programming_languages")
+    if filters:
+        query_filters = list()
+        params = list()
+        for column, value in filters.items():
+            if value and column != 'languageid':
+                query_filters.append(f'{column} ILIKE %s')
+                params.append(f'%{value}%')
+        where_clause = ' AND '.join(query_filters) if query_filters else '1=1'
+        if filters.get('languageid'):
+            where_clause += ' AND languageid = %s'
+            params.append(filters['languageid'])
+        cursor.execute(f"SELECT * FROM programming_languages "
+                       f"WHERE {where_clause}", params)
+    else:
+        cursor.execute("SELECT * FROM programming_languages")
+
     languages = [{'id': language[0],
                   'name': language[1],
                   'description': language[2]}
@@ -397,11 +412,26 @@ def get_programming_languages():
     return languages
 
 
-def get_engines():
+def get_engines(filters=None):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM engines")
+    if filters:
+        query_filters = list()
+        params = list()
+        for column, value in filters.items():
+            if value and column != 'engineid':
+                query_filters.append(f'{column} ILIKE %s')
+                params.append(f'%{value}%')
+        where_clause = ' AND '.join(query_filters) if query_filters else '1=1'
+        if filters.get('engineid'):
+            where_clause += ' AND engineid = %s'
+            params.append(filters['engineid'])
+        cursor.execute(f"SELECT * FROM engines "
+                       f"WHERE {where_clause}", params)
+    else:
+        cursor.execute("SELECT * FROM engines")
+
     engines = [{'id': engine[0],
                 'name': engine[1],
                 'description': engine[2]}
@@ -413,11 +443,26 @@ def get_engines():
     return engines
 
 
-def get_genres():
+def get_genres(filters=None):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM genres")
+    if filters:
+        query_filters = list()
+        params = list()
+        for column, value in filters.items():
+            if value and column != 'genreid':
+                query_filters.append(f'{column} ILIKE %s')
+                params.append(f'%{value}%')
+        where_clause = ' AND '.join(query_filters) if query_filters else '1=1'
+        if filters.get('genreid'):
+            where_clause += ' AND genreid = %s'
+            params.append(filters['genreid'])
+        cursor.execute(f"SELECT * FROM genres "
+                       f"WHERE {where_clause}", params)
+    else:
+        cursor.execute("SELECT * FROM genres")
+
     genres = [{'id': genre[0],
                'name': genre[1],
                'description': genre[2]}
@@ -582,6 +627,48 @@ def create_application(user_id, task, language_id, engine_id, genre_id):
     conn.close()
 
 
+def create_genre(name, description):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO genres (name, description)
+        VALUES (%s, %s);
+    """, [name, description])
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def create_engine(name, description):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO engines (name, techfeatures)
+        VALUES (%s, %s);
+    """, [name, description])
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def create_language(name, description):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO programming_languages (name, description)
+        VALUES (%s, %s);
+    """, [name, description])
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
 # UPDATE queries
 def create_update_lists(db_fields, parameters):
     fields_to_update = list()
@@ -655,6 +742,67 @@ def update_contact(pk, parameters):
     if fields_to_update:
         query = (f"UPDATE contacts SET {', '.join(fields_to_update)} "
                  f"WHERE userid = %s")
+        values.append(pk)
+        cursor.execute(query, values)
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return True
+
+
+def update_genre(pk, parameters):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    db_fields = ('name', 'description')
+    fields_to_update, values = create_update_lists(db_fields, parameters)
+
+    if fields_to_update:
+        query = (f"UPDATE genres SET {', '.join(fields_to_update)} "
+                 f"WHERE genreid = %s")
+        values.append(pk)
+        cursor.execute(query, values)
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return True
+
+
+def update_engine(pk, parameters):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    db_fields = ('name', 'techfeatures')
+    fields_to_update, values = create_update_lists(db_fields, parameters)
+
+    if fields_to_update:
+        query = (f"UPDATE engines SET {', '.join(fields_to_update)} "
+                 f"WHERE engineid = %s")
+        values.append(pk)
+        cursor.execute(query, values)
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return True
+
+
+def update_language(pk, parameters):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    db_fields = ('name', 'description')
+    fields_to_update, values = create_update_lists(db_fields, parameters)
+
+    if fields_to_update:
+        query = (f"UPDATE programming_languages "
+                 f"SET {', '.join(fields_to_update)} "
+                 f"WHERE languageid = %s")
         values.append(pk)
         cursor.execute(query, values)
         conn.commit()
@@ -752,6 +900,48 @@ def delete_connection(userid, applicationid):
     cursor.execute(("DELETE FROM user_application_connect "
                     "WHERE userid = %s AND applicationid = %s"),
                    (userid, applicationid))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return True
+
+
+def delete_genre(genreid):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(("DELETE FROM genres "
+                    "WHERE genreid = %s"),
+                   (genreid, ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return True
+
+
+def delete_engine(engineid):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(("DELETE FROM engines "
+                    "WHERE engineid = %s"),
+                   (engineid, ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return True
+
+
+def delete_language(languageid):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(("DELETE FROM programming_languages "
+                    "WHERE languageid = %s"),
+                   (languageid, ))
 
     conn.commit()
     cursor.close()
