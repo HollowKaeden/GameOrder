@@ -218,7 +218,53 @@ def initialize_db_features():
             INSERT INTO contacts
             VALUES (new_user_id, user_phone_number, user_email);
         END;
-        $$ LANGUAGE plpgsql;"""
+        $$ LANGUAGE plpgsql;""",
+        """
+        CREATE OR REPLACE FUNCTION GetApplicationDetails(appID INT)
+        RETURNS VARCHAR(1000) AS $$
+        DECLARE
+            appDetails VARCHAR(1000);
+        BEGIN
+            SELECT
+                'Status: ' || app.Status || ', Task: ' || app.Task || ',
+                Language: ' || progLang.Name ||
+                ', Engine: ' || eng.Name || ', Genre: ' || genres.Name
+            INTO appDetails
+            FROM applications app
+            JOIN programming_languages progLang
+                ON app.languageid = progLang.languageid
+            JOIN engines eng
+                ON app.engineid = eng.engineid
+            JOIN genres
+                ON app.genreid = genres.genreid
+            WHERE app.applicationid = appID;
+
+            RETURN appDetails;
+        END;
+        $$ LANGUAGE plpgsql;""",
+        """
+        CREATE OR REPLACE FUNCTION ValidateContactBeforeInsert()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            -- Проверка на дубликат номера
+            IF EXISTS (SELECT 1 FROM contacts WHERE PhoneNumber = NEW.PhoneNumber) THEN
+                RAISE EXCEPTION 'Duplicate phone number for the same user is not allowed.';
+            END IF;
+
+            -- Проверка на дубликат почты
+            IF EXISTS (SELECT 1 FROM contacts WHERE Email = NEW.Email) THEN
+                RAISE EXCEPTION 'Duplicate email for the same user is not allowed.';
+            END IF;
+
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+
+        CREATE TRIGGER ValidateContactBeforeInsert
+        BEFORE INSERT ON contacts
+        FOR EACH ROW
+        EXECUTE FUNCTION ValidateContactBeforeInsert();
+        """
     ]
 
     for query in sql_queries:
@@ -621,6 +667,13 @@ def create_application(user_id, task, language_id, engine_id, genre_id):
         INSERT INTO user_application_connect (userid, applicationid)
         VALUES (%s, %s);
     """, [user_id, application_id])
+
+    cursor.execute("""
+        SELECT GetApplicationDetails(%s);
+    """, (application_id,))
+
+    app_details = cursor.fetchone()[0]
+    print("Application details:", app_details)
 
     conn.commit()
     cursor.close()
