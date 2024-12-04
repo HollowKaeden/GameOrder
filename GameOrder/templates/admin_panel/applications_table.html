@@ -1,0 +1,335 @@
+<h3 class="mt-5">Таблица заявок</h3>
+
+<div class="search-grid mt-3">
+  <div>
+    <input type="text" class="form-control search-input application-search" data-column="applicationid" placeholder="Поиск по ID">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input application-search" data-column="status" placeholder="Поиск по статусу">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input application-search" data-column="task" placeholder="Поиск по задаче">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input application-search" data-column="languageid" placeholder="Поиск по ЯП">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input application-search" data-column="engineid" placeholder="Поиск по движку">
+  </div>
+  <div>
+    <input type="text" class="form-control search-input application-search" data-column="genreid" placeholder="Поиск по жанру">
+  </div>
+</div>
+
+<table class="table table-bordered mt-3" id="application-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Статус</th>
+      <th>Задача</th>
+      <th>Язык</th>
+      <th>Движок</th>
+      <th>Жанр</th>
+      <th>Действия</th>
+    </tr>
+  </thead>
+  <tbody id="application-table-body">
+    {% for application in applications %}
+      <tr data-id="{{ application.id }}">
+        <td>{{ application.id }}</td>
+        <td>
+          <span class="editable-application">{{ application.status }}</span>
+          <textarea class="form-control application-input d-none"
+                    rows="1"
+                    style="resize: none; overflow-wrap: break-word; width: 100%;"
+                    data-field="status">{{ application.status }}</textarea>
+          <button class="btn btn-sm btn-primary save-application d-none">Сохранить</button>
+        </td>
+        <td>
+          <span class="editable-application">{{ application.task }}</span>
+          <textarea class="form-control application-input d-none"
+                    rows="1"
+                    style="resize: none; overflow-wrap: break-word; width: 100%;"
+                    data-field="task">{{ application.task }}</textarea>
+          <button class="btn btn-sm btn-primary save-application d-none">Сохранить</button>
+        </td>
+        <td>
+          <span class="editable-application">{{ application.language }}</span>
+          <textarea class="form-control application-input d-none"
+                    rows="1"
+                    style="resize: none; overflow-wrap: break-word; width: 100%;"
+                    data-field="language_id">{{ application.language }}</textarea>
+          <button class="btn btn-sm btn-primary save-application d-none">Сохранить</button>
+        </td>
+        <td>
+          <span class="editable-application">{{ application.engine }}</span>
+          <textarea class="form-control application-input d-none"
+                    rows="1"
+                    style="resize: none; overflow-wrap: break-word; width: 100%;"
+                    data-field="engine_id">{{ application.engine }}</textarea>
+          <button class="btn btn-sm btn-primary save-application d-none">Сохранить</button>
+        </td>
+        <td>
+          <span class="editable-application">{{ application.genre }}</span>
+          <textarea class="form-control application-input d-none"
+                    rows="1"
+                    style="resize: none; overflow-wrap: break-word; width: 100%;"
+                    data-field="genre_id">{{ application.genre }}</textarea>
+          <button class="btn btn-sm btn-primary save-application d-none">Сохранить</button>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-danger delete-application" data-id="{{ application.id }}">Удалить</button>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="mt-3">
+  <button class="btn btn-success" id="add-application-btn">Добавить заявку</button>
+</div>
+
+<div class="modal fade" id="addApplicationModal" tabindex="-1" aria-labelledby="addApplicationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addApplicationModalLabel">Добавить новую заявку</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="add-application-form">
+          <div class="mb-3">
+            <label for="new-application-status" class="form-label">Статус</label>
+            <input type="text" class="form-control" id="new-application-status" placeholder="Введите статус">
+          </div>
+          <div class="mb-3">
+            <label for="new-application-task" class="form-label">Задача</label>
+            <textarea class="form-control" id="new-application-task" rows="3" placeholder="Введите задачу"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="new-application-language" class="form-label">Язык</label>
+            <select class="form-select" id="new-application-language">
+              {% for language in languages %}
+                <option value="{{ language.id }}">{{ language.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="new-application-engine" class="form-label">Движок</label>
+            <select class="form-select" id="new-application-engine">
+              {% for engine in engines %}
+                <option value="{{ engine.id }}">{{ engine.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="new-application-genre" class="form-label">Жанр</label>
+            <select class="form-select" id="new-application-genre">
+              {% for genre in genres %}
+                <option value="{{ genre.id }}">{{ genre.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" id="save-new-application-btn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const tableBody = document.getElementById("application-table-body");
+    const searchInputs = document.querySelectorAll(".application-search");
+
+    // Debounce to optimize filtering
+    const debounce = (func, delay) => {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), delay);
+      };
+    };
+
+    // Helper to show/hide elements
+    const toggleVisibility = (elements, visible) => {
+      elements.forEach((el) => el.classList.toggle("d-none", !visible));
+    };
+
+    // Initialize editing events
+    const setupEditingEvents = () => {
+      tableBody.querySelectorAll(".editable-application").forEach((span) => {
+        span.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const textarea = parent.querySelector(".application-input");
+          const saveButton = parent.querySelector(".save-application");
+
+          toggleVisibility([textarea, saveButton], true);
+          toggleVisibility([span], false);
+
+          textarea.style.height = "auto";
+          textarea.style.height = `${textarea.scrollHeight}px`;
+          textarea.focus();
+          textarea.select();
+        });
+      });
+
+      tableBody.querySelectorAll(".save-application").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const parent = target.closest("td");
+          const row = target.closest("tr");
+          const applicationId = row.dataset.id;
+          const textarea = parent.querySelector(".application-input");
+          const span = parent.querySelector(".editable-application");
+          const newValue = textarea.value.trim();
+
+          if (newValue) {
+            updateApplication(applicationId, textarea.getAttribute("data-field"), newValue)
+              .then(() => {
+                span.textContent = newValue;
+              })
+              .catch((error) => console.error("Ошибка:", error))
+              .finally(() => {
+                toggleVisibility([textarea, button], false);
+                toggleVisibility([span], true);
+              });
+          }
+        });
+      });
+    };
+
+    // Send PATCH request to update application
+    const updateApplication = (id, field, value) => {
+      return fetch(`{% url 'api:patch_application' 0 %}`.replace("0", id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      }).then((response) => response.json());
+    };
+
+    // Initialize delete events
+    const setupDeleteEvents = () => {
+      tableBody.querySelectorAll(".delete-application").forEach((button) => {
+        button.addEventListener("click", ({ target }) => {
+          const applicationId = target.dataset.id;
+          if (confirm("Вы уверены, что хотите удалить эту заявку?")) {
+            deleteApplication(applicationId)
+              .then(() => target.closest("tr").remove())
+              .catch((error) => console.error("Ошибка:", error));
+          }
+        });
+      });
+    };
+
+    // Send DELETE request to remove application
+    const deleteApplication = (id) => {
+      return fetch(`{% url 'api:delete_application' 0 %}`.replace("0", id), {
+        method: "DELETE",
+      }).then((response) => response.json());
+    };
+
+    // Fetch and update filtered data
+    const fetchFilteredData = debounce(() => {
+      const filters = Array.from(searchInputs).reduce((acc, input) => {
+        const value = input.value.trim();
+        if (value) acc[input.dataset.column] = value;
+        return acc;
+      }, {});
+
+      fetch("{% url 'api:filter_applications' %}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+        body: JSON.stringify(filters),
+      })
+        .then((response) => response.json())
+        .then((data) => updateTable(data.applications))
+        .catch((error) => console.error("Ошибка при фильтрации:", error));
+    }, 300);
+
+    // Update table content
+    const updateTable = (applications) => {
+      tableBody.innerHTML = applications.length
+        ? applications
+            .map(
+              (application) => `
+                <tr data-id="${application.id}">
+                  <td>${application.id}</td>
+                  <td>${createEditableCell(application.status, "status")}</td>
+                  <td>${createEditableCell(application.task, "task")}</td>
+                  <td>${createEditableCell(application.language, "language_id")}</td>
+                  <td>${createEditableCell(application.engine, "engine_id")}</td>
+                  <td>${createEditableCell(application.genre, "genre_id")}</td>
+                  <td>
+                    <button class="btn btn-sm btn-danger delete-application" data-id="${application.id}">Удалить</button>
+                  </td>
+                </tr>
+              `
+            )
+            .join("")
+        : "<tr><td colspan='7' class='text-center'>Нет данных</td></tr>";
+
+      setupEditingEvents();
+      setupDeleteEvents();
+    };
+
+    document.getElementById("add-application-btn").addEventListener("click", () => {
+      const modal = new bootstrap.Modal(document.getElementById("addApplicationModal"));
+      modal.show();
+    });
+
+    const saveNewApplicationBtn = document.getElementById("save-new-application-btn");
+
+    saveNewApplicationBtn.addEventListener("click", () => {
+      const status = document.getElementById("new-application-status").value.trim();
+      const task = document.getElementById("new-application-task").value.trim();
+      const languageId = document.getElementById("new-application-language").value;
+      const engineId = document.getElementById("new-application-engine").value;
+      const genreId = document.getElementById("new-application-genre").value;
+
+  
+      fetch("{% url 'api:add_application' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": "{{ csrf_token }}",
+        },
+        body: JSON.stringify({
+          "status": status,
+          "task": task,
+          "languageid": languageId,
+          "engineid": engineId,
+          "genreid": genreId,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status == "success") {
+            alert("Заявка успешно добавлена!");
+            location.reload(); // Перезагрузка страницы для обновления таблицы
+          } else {
+            alert("Ошибка при добавлении заявки: " + data.error);
+          }
+        })
+        .catch((error) => {
+          console.error("Ошибка при добавлении заявки:", error);
+        });
+    });
+
+    // Create an editable table cell
+    const createEditableCell = (value, field) => `
+      <span class="editable-application">${value}</span>
+      <textarea class="form-control application-input d-none" rows="1" data-field="${field}">${value}</textarea>
+      <button class="btn btn-sm btn-primary save-application d-none">Сохранить</button>
+    `;
+
+    searchInputs.forEach((input) => input.addEventListener("input", fetchFilteredData));
+
+    setupEditingEvents();
+    setupDeleteEvents();
+  });
+</script>

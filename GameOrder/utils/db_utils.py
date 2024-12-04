@@ -466,11 +466,27 @@ def get_user_applications(user_id):
     return applications
 
 
-def get_applications():
+def get_applications(filters=None):
     conn = get_db_connection()
     cursor = conn.cursor()
+    if filters:
+        query_filters = list()
+        params = list()
+        for column, value in filters.items():
+            if value:
+                if column not in ('applicationid', 'engineid',
+                                  'genreid', 'languageid'):
+                    query_filters.append(f'{column} ILIKE %s')
+                    params.append(f'%{value}%')
+                else:
+                    query_filters.append(f'{column} = %s')
+                    params.append(value)
+        where_clause = ' AND '.join(query_filters) if query_filters else '1=1'
+        cursor.execute(f"SELECT * FROM applications "
+                       f"WHERE {where_clause}", params)
+    else:
+        cursor.execute("SELECT * FROM applications")
 
-    cursor.execute("SELECT * FROM applications")
     applications = [
         {
             'id': row[0],
@@ -485,6 +501,7 @@ def get_applications():
 
     cursor.close()
     conn.close()
+
     return applications
 
 
@@ -524,6 +541,20 @@ def create_connection(userid, applicationid):
     cursor.execute("""
         INSERT INTO user_application_connect VALUES (%s, %s);
     """, [userid, applicationid])
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def create_application_only(status, task, languageid, engineid, genreid):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO applications (status, task, languageid, engineid, genreid)
+        VALUES (%s, %s, %s, %s, %s) RETURNING applicationid;
+    """, [status, task, languageid, engineid, genreid])
 
     conn.commit()
     cursor.close()

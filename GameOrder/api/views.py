@@ -12,6 +12,7 @@ from utils.db_utils import (get_users,
                             delete_connection,
                             get_applications,
                             update_application,
+                            create_application_only,
                             delete_application,
                             )
 
@@ -145,6 +146,22 @@ def api_get_applications(request):
     return JsonResponse({'applications': applications})
 
 
+@api_view(['POST'])
+def api_filter_applications(request):
+    filters = {
+        'applicationid': request.data.get('applicationid'),
+        'task': request.data.get('task'),
+        'status': request.data.get('status'),
+        'languageid': request.data.get('languageid'),
+        'engineid': request.data.get('engineid'),
+        'genreid': request.data.get('genreid')
+    }
+
+    applications = get_applications(filters)
+
+    return JsonResponse({'applications': applications})
+
+
 @api_view(['PATCH'])
 def api_patch_application(request, pk):
     parameters = {
@@ -161,6 +178,19 @@ def api_patch_application(request, pk):
         return JsonResponse({'status': 'error',
                              'message': 'Заявка не найдена!'}, status=404)
     return JsonResponse({'status': 'success', 'message': 'Заявка обновлена!'})
+
+
+@api_view(['POST'])
+def add_application(request):
+    status = request.data.get('status')
+    task = request.data.get('task')
+    languageid = request.data.get('languageid')
+    engineid = request.data.get('engineid')
+    genreid = request.data.get('genreid')
+
+    create_application_only(status, task, languageid, engineid, genreid)
+
+    return JsonResponse({'status': 'success'})
 
 
 @api_view(['DELETE'])
